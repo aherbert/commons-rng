@@ -113,6 +113,10 @@
                     <argument>json</argument>
                     <argument>-rff</argument>
                     <argument>target/jmh-result.${benchmark}.json</argument>
+                    <argument>-wi</argument>
+                    <argument>10</argument>
+                    <argument>-i</argument>
+                    <argument>100</argument>
                     <argument>${benchmark}</argument>
                   </arguments>
                 </configuration>

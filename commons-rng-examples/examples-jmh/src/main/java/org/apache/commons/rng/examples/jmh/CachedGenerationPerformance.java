@@ -255,7 +255,7 @@ public class CachedGenerationPerformance {
     /**
      * Flag to indicate the provider should be wrapped with a cache.
      */
-    @Param({"0", "1", "2", "3", "4"})
+    @Param({"0", "1", "4", "1", "4"})
     private int cacheMethod;
 
     /**
@@ -316,7 +316,7 @@ public class CachedGenerationPerformance {
      * @param sources Source of randomness.
      * @param bh Data sink.
      */
-    @Benchmark
+    //@Benchmark
     public void nextIntLongProvider(SourcesLong sources,
                                     Blackhole bh) {
         UniformRandomProvider rng = sources.getGenerator();
