@@ -24,7 +24,7 @@ import org.apache.commons.rng.UniformRandomProvider;
 /**
  * Class for representing permutations of a sequence of integers.
  *
- * This class also contains utilities for shuffling an {@code int[]} array in-place.
+ * <p>This class also contains utilities for shuffling an {@code int[]} array in-place.
  */
 public class PermutationSampler {
     /** Domain of the permutation. */
@@ -37,7 +37,7 @@ public class PermutationSampler {
     /**
      * Creates a generator of permutations.
      *
-     * The {@link #sample()} method will generate an integer array of
+     * <p>The {@link #sample()} method will generate an integer array of
      * length {@code k} whose entries are selected randomly, without
      * repetition, from the integers 0, 1, ..., {@code n}-1 (inclusive).
      * The returned array represents a permutation of {@code n} taken
@@ -87,14 +87,14 @@ public class PermutationSampler {
      */
     public static void shuffle(UniformRandomProvider rng,
                                int[] list) {
-        shuffle(rng, list, 0, false);
+        shuffle(rng, list, list.length - 1, true);
     }
 
     /**
      * Shuffles the entries of the given array, using the
      * <a href="http://en.wikipedia.org/wiki/Fisher-Yates_shuffle#The_modern_algorithm">
      * Fisher-Yates</a> algorithm.
-     * The {@code start} and {@code pos} parameters select which part
+     * The {@code start} and {@code towardHead} parameters select which part
      * of the array is randomized and which is left untouched.
      *
      * @param rng Random number generator.
@@ -109,25 +109,15 @@ public class PermutationSampler {
                                int start,
                                boolean towardHead) {
         if (towardHead) {
-            for (int i = 0; i <= start; i++) {
-                final int target;
-                if (i == start) {
-                    target = start;
-                } else {
-                    target = rng.nextInt(start - i + 1) + i;
-                }
+            for (int i = start; i > 0; i--) {
+                final int target = rng.nextInt(i + 1);
                 final int temp = list[target];
                 list[target] = list[i];
                 list[i] = temp;
             }
         } else {
-            for (int i = list.length - 1; i >= start; i--) {
-                final int target;
-                if (i == start) {
-                    target = start;
-                } else {
-                    target = rng.nextInt(i - start + 1) + start;
-                }
+            for (int i = list.length - 1; i > start; i--) {
+                final int target = rng.nextInt(i - start + 1) + start;
                 final int temp = list[target];
                 list[target] = list[i];
                 list[i] = temp;
