@@ -248,7 +248,7 @@ public class ProvidersCommonParametricTest {
         // Replay.
         final List<Number> listReplay = makeList(n);
         Assert.assertFalse(listOrig == listReplay);
-        // Check that the restored state is the same as the orginal.
+        // Check that the restored state is the same as the original.
         Assert.assertTrue(listOrig.equals(listReplay));
     }
 
@@ -288,7 +288,7 @@ public class ProvidersCommonParametricTest {
             list.add(generator.nextFloat());
             list.add(generator.nextDouble());
             list.add(generator.nextDouble());
-            list.add(generator.nextDouble());
+            list.add(generator.nextBoolean() ? 1 : 0);
         }
 
         return list;
@@ -499,6 +499,10 @@ public class ProvidersCommonParametricTest {
         for (int k = 0; k < numBins; k++) {
             binUpperBounds[k] = (long) ((k + 1) * step);
         }
+        // Rounding error occurs on the long value of 2305843009213693951L
+        binUpperBounds[numBins - 1] = n;
+        //Assert.assertEquals("Rounding error computing upper bound", 
+        //        n, binUpperBounds[numBins-1]);
 
         // Run the tests.
         int numFailures = 0;
@@ -547,6 +551,10 @@ public class ProvidersCommonParametricTest {
             // Should never happen.
             throw new RuntimeException("Unexpected", e);
         }
+
+        // For debugging
+        System.out.println(generator + ": n = " + n + " <" + max.getClass().getSimpleName() + ">" +
+                " (" + numFailures + " out of " + numTests + " tests failed)");
 
         if ((double) numFailures / (double) numTests > 0.02) {
             Assert.fail(generator + ": Too many failures for n = " + n +
