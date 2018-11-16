@@ -21,26 +21,24 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.simple.RandomSource;
 
 /**
  * List of generators.
  */
-public class GeneratorsList implements Iterable<UniformRandomProvider> {
+public class LongGeneratorsList implements Iterable<UniformRandomProvider> {
     /** List. */
     private final List<UniformRandomProvider> list = new ArrayList<UniformRandomProvider>();
 
     /**
      * Creates list.
      */
-    public GeneratorsList() {
-        addAll(new IntGeneratorsList().iterator());
-        addAll(new LongGeneratorsList().iterator());
-    }
-
-    private void addAll(Iterator<UniformRandomProvider> iterator) {
-      while (iterator.hasNext()) {
-        list.add(iterator.next());
-      }
+    public LongGeneratorsList() {
+        // LongProviders
+        list.add(RandomSource.create(RandomSource.MT_64));
+        list.add(RandomSource.create(RandomSource.SPLIT_MIX_64));
+        list.add(RandomSource.create(RandomSource.TWO_CMRES));
+        list.add(RandomSource.create(RandomSource.XOR_SHIFT_1024_S));
     }
 
     /** {@inheritDoc} */

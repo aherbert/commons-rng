@@ -17,3 +17,5 @@ site-content
 *~
 /.externalToolBuilders/
 /maven-eclipse.xml
+*/examples-stress/report/
+stdin2testu01
