@@ -30,10 +30,10 @@ import java.util.Arrays;
  * corresponding {@link PermutationSampler}. It can be configured to enforce
  * strict ordering using a sort of each sample with a degradation in
  * performance.
- * 
+ *
  * <p>The sampler can be used to generate indices to select subsets where the
  * order of the subset is not important.
- * 
+ *
  * @see <a href="https://en.wikipedia.org/wiki/Combination">Combination
  *      definition</a>
  * @see PermutationSampler
@@ -63,10 +63,10 @@ public class CombinationSampler {
      * The {@link #sample()} method will generate an integer array of length
      * {@code k} whose entries are selected randomly, without repetition, from the
      * integers 0, 1, ..., {@code n}-1 (inclusive).
-     * 
+     *
      * <p>The returned array is a set of {@code n} taken {@code k} but is not
      * guaranteed to be in a random order.
-     * 
+     *
      * <p>If {@code n <= 0} or {@code k <= 0} or {@code k >= n} then no combination
      * is required and an exception is raised.
      *
@@ -82,15 +82,15 @@ public class CombinationSampler {
 
     /**
      * Creates a combination sampler.
-     * 
+     *
      * The {@link #sample()} method will generate an integer array of length
      * {@code k} whose entries are selected randomly, without repetition, from the
      * integers 0, 1, ..., {@code n}-1 (inclusive).
-     * 
+     *
      * <p>The returned array is a set of {@code n} taken {@code k} but is not
      * guaranteed to be in a random order. The order may optionally be enforced to
      * be sorted with an associated performance cost.
-     * 
+     *
      * <p>If {@code n <= 0} or {@code k <= 0} or {@code k >= n} then no combination
      * is required and an exception is raised.
      *
@@ -115,13 +115,13 @@ public class CombinationSampler {
         domain = PermutationSampler.natural(n);
         size = k;
         this.sorted = sorted;
-        // The sample can be optimised by only performing the first n steps
-        // from a full Fisher-Yates shuffle. The upper n positions will then
-        // contain a random sample from the domain. The lower half is then
-        // by definition also a random sample (just not in a random order).
-        // The sample is then picked using the upper or lower half depending
-        // which makes the number of steps smaller.
-        if (k < n / 2) {
+        // The sample can be optimised by only performing the first k or (n - k) steps
+        // from a full Fisher-Yates shuffle from the end of the domain to the start.
+        // The upper positions will then contain a random sample from the domain. The
+        // lower half is then by definition also a random sample (just not in a random order).
+        // The sample is then picked using the upper or lower half depending which
+        // makes the number of steps smaller.
+        if (k <= n / 2) {
             // Upper half
             steps = k;
             from = n - k;
@@ -136,10 +136,10 @@ public class CombinationSampler {
     /**
      * Return a combination of {@code k} whose entries are selected randomly,
      * without repetition, from the integers 0, 1, ..., {@code n}-1 (inclusive).
-     * 
+     *
      * <p>The order of the returned array is not guaranteed to be in a random order
      * as the order of a combination does not matter.
-     * 
+     *
      * @return a random combination.
      */
     public int[] sample() {
@@ -193,7 +193,7 @@ public class CombinationSampler {
 
     /**
      * Checks if the sample is sorted.
-     * 
+     *
      * <p>Note: The order of a combination does not matter. If this is {@code true}
      * the output will be sorted with an associated performance cost. If
      * {@code false} the sample order is unspecified.
