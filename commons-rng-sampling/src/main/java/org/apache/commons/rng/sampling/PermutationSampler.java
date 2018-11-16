@@ -25,6 +25,8 @@ import org.apache.commons.rng.UniformRandomProvider;
  * Class for representing permutations of a sequence of integers.
  *
  * <p>This class also contains utilities for shuffling an {@code int[]} array in-place.
+ * 
+ * @see <a href="https://en.wikipedia.org/wiki/Permutation">Permutation definition</a>
  */
 public class PermutationSampler {
     /** Domain of the permutation. */
@@ -53,13 +55,13 @@ public class PermutationSampler {
                               int n,
                               int k) {
         if (n < 0) {
-            throw new IllegalArgumentException(n + " < " + 0);
+            throw new IllegalArgumentException("n < 0 : n=" + n);
         }
         if (k <= 0) {
-            throw new IllegalArgumentException(k + " <= " + 0);
+            throw new IllegalArgumentException("k <= 0 : k=" + k);
         }
         if (k > n) {
-            throw new IllegalArgumentException(k + " > " + n);
+            throw new IllegalArgumentException("k > n : k=" + k + ", n=" + n);
         }
 
         domain = natural(n);
@@ -109,20 +111,34 @@ public class PermutationSampler {
                                int start,
                                boolean towardHead) {
         if (towardHead) {
+            // Visit all positions from start to 0.
+            // Do not visit 0 to avoid a swap with itself.
             for (int i = start; i > 0; i--) {
-                final int target = rng.nextInt(i + 1);
-                final int temp = list[target];
-                list[target] = list[i];
-                list[i] = temp;
+                // Swap index with any position down to 0
+                swap(list, i, rng.nextInt(i + 1));
             }
         } else {
+            // Visit all positions from the end to start.
+            // Start is not visited to avoid a swap with itself.
             for (int i = list.length - 1; i > start; i--) {
-                final int target = rng.nextInt(i - start + 1) + start;
-                final int temp = list[target];
-                list[target] = list[i];
-                list[i] = temp;
+                // Swap index with any position down to start.
+                // Note: i - start + 1 is the number of elements remaining.
+                swap(list, i, rng.nextInt(i - start + 1) + start);
             }
         }
+    }
+
+    /**
+     * Swaps the two specified elements in the specified array.
+     *
+     * @param array the array
+     * @param i     the first index
+     * @param j     the second index
+     */
+    private static void swap(int[] array, int i, int j) {
+        final int tmp = array[i];
+        array[i] = array[j];
+        array[j] = tmp;
     }
 
     /**
