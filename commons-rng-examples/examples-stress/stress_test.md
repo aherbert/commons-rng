@@ -73,4 +73,4 @@ The jar file requires the following arguments:
 
 ### DieHarder
 
-        > java -jar target/examples-stress.jar target/dh_ 4 org.apache.commons.rng.examples.stress.GeneratorsList dieharder -a -g 200 -Y 1 -k 2
+        > java -jar target/examples-stress.jar target/dh_ 4 org.apache.commons.rng.examples.stress.GeneratorsList /usr/bin/dieharder -a -g 200 -Y 1 -k 2
