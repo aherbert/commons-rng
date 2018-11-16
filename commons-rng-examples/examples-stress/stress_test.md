@@ -19,7 +19,7 @@ Apache Commons RNG Stress Test Example
 ===================
 
 The stress test module contains an application for calling external tools that perform stringent
-uniformity tests. The following shows an example of how to run DieHarder and testu01 BigCrush.
+uniformity tests. The following shows an example of how to run DieHarder and TestU01.
 
 Installation on Linux
 ---------------------
@@ -27,14 +27,26 @@ Installation on Linux
 This assumes that the source code has been checked out and the current working directory is
 `commons-rng-examples/examples-stress`. 
 
-### testu01
+### TestU01
+
+This can be installed from [Test01](http://simul.iro.umontreal.ca/testu01/tu01.html) or using
+the available packages: 
 
         > apt-get install libtestu01 libtestu01-dev testu01-bin
-        > gcc src/main/c/stdin2testu01.c -ltestu01 -ltestu01mylib -ltestu01probdist -o stdin2testu01
+
+A simple bridge is provided to read the integers from `stdin` and pass them to the TestU01 library.
+This can be compiled using:
+
+        > gcc src/main/c/stdin2testu01.c -o stdin2testu01 -ltestu01 -lprobdist -lmylib -lm
 
 ### DieHarder
 
+This can be install from [DieHarder](http://webhome.phy.duke.edu/~rgb/General/dieharder.php) or
+using the available package: 
+
         > apt-get install dieharder
+
+The `dieharder` executable can read integers from `stdin` for analysis. 
 
 Running on Linux
 ----------------
@@ -43,7 +55,7 @@ Build the `examples-stress` jar file:
 
         > mvn package -P examples-stress
 
-This will create a single jar file with all the code in the `target` directory.
+This will create a single jar file with all the dependencies in the `target` directory.
 
 The jar file requires the following arguments:
 
@@ -55,9 +67,9 @@ The jar file requires the following arguments:
 | executable | The test tool | dieharder, stdin2testu01 |
 | ... | Arguments for the test tool | dieharder: -a -g 200 -Y 1 -k 2, stdin2testu01: SmallCrush, Crush, BigCrush |
 
-### testu01
+### TestU01
 
-        > java -jar target/examples-stress.jar target/bc_ 4 org.apache.commons.rng.examples.stress.GeneratorsList ./stdin2testu01 BigCrush
+        > java -jar target/examples-stress.jar target/tu_ 4 org.apache.commons.rng.examples.stress.GeneratorsList ./stdin2testu01 BigCrush
 
 ### DieHarder
 
