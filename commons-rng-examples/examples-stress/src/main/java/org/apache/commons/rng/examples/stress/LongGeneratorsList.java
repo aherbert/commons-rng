@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.commons.rng.UniformRandomProvider;
-import org.apache.commons.rng.simple.RandomSource;
+import org.apache.commons.rng.core.source64.LongProvider;
 
 /**
- * List of generators.
+ * List of generators that use {@link LongProvider} as a base class.
  */
 public class LongGeneratorsList implements Iterable<UniformRandomProvider> {
     /** List. */
@@ -34,11 +34,11 @@ public class LongGeneratorsList implements Iterable<UniformRandomProvider> {
      * Creates list.
      */
     public LongGeneratorsList() {
-        // LongProviders
-        list.add(RandomSource.create(RandomSource.MT_64));
-        list.add(RandomSource.create(RandomSource.SPLIT_MIX_64));
-        list.add(RandomSource.create(RandomSource.TWO_CMRES));
-        list.add(RandomSource.create(RandomSource.XOR_SHIFT_1024_S));
+        for (UniformRandomProvider rng : new GeneratorsList()) {
+            if (rng instanceof LongProvider) {
+                list.add(rng);
+            }
+        }
     }
 
     /** {@inheritDoc} */

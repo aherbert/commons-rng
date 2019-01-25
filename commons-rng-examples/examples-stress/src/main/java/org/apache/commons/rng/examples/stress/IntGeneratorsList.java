@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.commons.rng.UniformRandomProvider;
-import org.apache.commons.rng.simple.RandomSource;
+import org.apache.commons.rng.core.source32.IntProvider;
 
 /**
- * List of generators.
+ * List of generators that use {@link IntProvider} as a base class.
  */
 public class IntGeneratorsList implements Iterable<UniformRandomProvider> {
     /** List. */
@@ -34,18 +34,11 @@ public class IntGeneratorsList implements Iterable<UniformRandomProvider> {
      * Creates list.
      */
     public IntGeneratorsList() {
-        // IntProviders
-        list.add(RandomSource.create(RandomSource.ISAAC));
-        list.add(RandomSource.create(RandomSource.JDK));
-        list.add(RandomSource.create(RandomSource.KISS));
-        list.add(RandomSource.create(RandomSource.MT));
-        list.add(RandomSource.create(RandomSource.MWC_256));
-        list.add(RandomSource.create(RandomSource.WELL_512_A));
-        list.add(RandomSource.create(RandomSource.WELL_1024_A));
-        list.add(RandomSource.create(RandomSource.WELL_19937_A));
-        list.add(RandomSource.create(RandomSource.WELL_19937_C));
-        list.add(RandomSource.create(RandomSource.WELL_44497_A));
-        list.add(RandomSource.create(RandomSource.WELL_44497_B));
+        for (UniformRandomProvider rng : new GeneratorsList()) {
+            if (rng instanceof IntProvider) {
+                list.add(rng);
+            }
+        }
     }
 
     /** {@inheritDoc} */
