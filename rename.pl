@@ -93,7 +93,7 @@ print OUT "git commit -m 'Updated stress test results files to intermediates'\n"
 for $run (1 .. 3) {
   for $test (qw(dh tu)) {
     print OUT "cd src/site/resources/txt/userguide/stress/$test/run_$run\n";
-    for (@step1) {
+    for (@step2) {
       $tmp = $_;
       $tmp =~ s#xx_#${test}_#g;
       print OUT $tmp;
