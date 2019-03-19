@@ -59,7 +59,7 @@ for $rng (@generatorsList) {
   $i++;
   $end = indexOf($rng);
   if ($i != $end) {
-    push @perl, "if (m#$rng.*{{{../txt/userguide/stress/dh/run_1#) { s/dh_$i/dh_$end/g; s/tu_$i/tu_$end/g; }\n";
+    push @perl, "if (m#$rng.*\\{\\{\\{../txt/userguide/stress/dh/run_1#) { s/dh_$i/dh_$end/g; s/tu_$i/tu_$end/g; }\n";
     push @step1, "git mv xx_$i xx_$mid\n";
     push @step2, "git mv xx_$mid xx_$end\n";
     printf "%-20s %2d => $mid => %2d\n", $rng, $i, $end;
@@ -68,7 +68,7 @@ for $rng (@generatorsList) {
 
 push @perl, "print;\n";
 
-print "> perl -i script src/site/apt/userguide/rng.apt\n";
+print "> perl -i script.pl src/site/apt/userguide/rng.apt\n";
 open (OUT, ">script.pl") or die;
 print OUT $_ for @perl;
 close OUT;
@@ -84,7 +84,16 @@ for $run (1 .. 3) {
       $tmp =~ s#xx_#${test}_#g;
       print OUT $tmp;
     }
-    for (@step2) {
+    print OUT "cd -\n";
+  }
+}
+
+print OUT "git commit -m 'Updated stress test results files to intermediates'\n";
+
+for $run (1 .. 3) {
+  for $test (qw(dh tu)) {
+    print OUT "cd src/site/resources/txt/userguide/stress/$test/run_$run\n";
+    for (@step1) {
       $tmp = $_;
       $tmp =~ s#xx_#${test}_#g;
       print OUT $tmp;
@@ -92,4 +101,7 @@ for $run (1 .. 3) {
     print OUT "cd -\n";
   }
 }
+
+print OUT "git commit -m 'Updated stress test results files'\n";
+
 close OUT;
