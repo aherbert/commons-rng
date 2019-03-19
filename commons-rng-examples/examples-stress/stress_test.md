@@ -71,6 +71,19 @@ using the available packages:
 The `dieharder` executable can read integers from `stdin` for analysis so no additional steps are
 required.
 
+Test platform Endianness
+------------------------
+
+The **Dieharder** and **TestU01** test suites read raw binary data. This is done using the native
+platform byte order or [Endianness](https://en.wikipedia.org/wiki/Endianness). The stress test
+application can support either big-endian or little-endian format. You can determine the required
+format using the provided utility program:
+
+        > gcc src/main/c/testendianness.c -o testendianness && ./testendianness
+        Little-endian
+
+More details are provided in the [endianness](./endianness.md) page.
+
 Running on Linux/MacOS
 ----------------------
 
@@ -87,6 +100,7 @@ The jar file requires the following arguments:
 | path | Output filename prefix | target/dh_ |
 | n | Number of processors | 4 |
 | GeneratorsList class | Fully qualified class name of a provider for the supported random generators | org.apache.commons.rng.examples.stress.(GeneratorsList/IntGeneratorsList/LongGeneratorsList) |
+| endianness | The platform endianess | LE (little-endian), BE (big-endian) |
 | executable | The test tool | dieharder, stdin2testu01 |
 | ... | Arguments for the test tool | dieharder: -a -g 200 -Y 1 -k 2 <br/> stdin2testu01: SmallCrush, Crush, BigCrush |
 
@@ -96,6 +110,7 @@ The jar file requires the following arguments:
               target/tu_ \
               4 \
               org.apache.commons.rng.examples.stress.GeneratorsList \
+              LE \
               ./stdin2testu01 \
               BigCrush
 
@@ -105,5 +120,6 @@ The jar file requires the following arguments:
               target/dh_ \
               4 \
               org.apache.commons.rng.examples.stress.GeneratorsList \
+              LE \
               /usr/bin/dieharder \
               -a -g 200 -Y 1 -k 2

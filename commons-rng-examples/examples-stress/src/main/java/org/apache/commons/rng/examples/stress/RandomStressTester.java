@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.core.source32.IntProvider;
 
 /**
  * Class that can be used for testing a generator by piping the values
@@ -50,6 +51,7 @@ import org.apache.commons.rng.UniformRandomProvider;
  *    report/dh_ \
  *    4 \
  *    org.apache.commons.rng.examples.stress.GeneratorsList \
+ *    LE \
  *    /usr/bin/dieharder -a -g 200 -Y 1 -k 2
  * </code></pre>
  */
@@ -104,24 +106,67 @@ public class RandomStressTester {
      *  <li>Name of a class that implements {@code Iterable<UniformRandomProvider>}
      *   (and defines a default constructor): Each generator of the list will be
      *   tested by one instance of the analyzer program</li>
+     *  <li>Endianness: LE for little-endian (outout bytes will be reversed) or BE for big endian
+     *   (uses standard network byte order for transmission).</li>
      *  <li>Path to the executable: this is the analyzer software that reads 32-bits
      *   integers from stdin.</li>
      *  <li>All remaining arguments are passed to the executable.</li>
      * </ol>
      */
     public static void main(String[] args) {
+        if (args.length < 5) {
+            printUsageAndExit();
+        }
         final String output = args[0];
         final int numThreads = Integer.parseInt(args[1]);
 
         final Iterable<UniformRandomProvider> rngList = createGeneratorsList(args[2]);
 
+        final boolean littleEndian = parseEndianness(args[3]);
+
         final List<String> cmdLine = new ArrayList<String>();
-        cmdLine.addAll(Arrays.asList(Arrays.copyOfRange(args, 3, args.length)));
+        cmdLine.addAll(Arrays.asList(Arrays.copyOfRange(args, 4, args.length)));
 
         final RandomStressTester app = new RandomStressTester(cmdLine, output);
 
         // Throws runtime exceptions
-        app.run(rngList, numThreads);
+        app.run(rngList, numThreads, littleEndian);
+    }
+
+    /**
+     * Prints the program usage and exit.
+     */
+    private static void printUsageAndExit() {
+        // @CHECKSTYLE: stop all
+        System.out.println(RandomStressTester.class.getSimpleName());
+        System.out.println("Program to pipe randomly generated bit data to a subprocess");
+        System.out.println("Arguments:");
+        System.out.println("path: Output filename prefix");
+        System.out.println("GeneratorsList class: Fully qualified class name of a provider");
+        System.out.println("                      for the supported random generators");
+        System.out.println("endianness: The platform endianess (LE, BE)");
+        System.out.println("executable: The test tool");
+        System.out.println("...: Arguments for the test tool");
+        // @CHECKSTYLE: resume all
+        System.exit(1);
+    }
+
+    /**
+     * Parses the endianness from the {@link String} value. Recognises {@code LE} for little
+     * and {@code BE} for big-endian. Parsing is case insensitive.
+     *
+     * @param value the value.
+     * @return {@code true} if little-endian, {@code false} if big-endian.
+     * @throws IllegalArgumentException if the string does not contain a parsable endianness.
+     */
+    private static boolean parseEndianness(String value) {
+        if ("LE".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("BE".equalsIgnoreCase(value)) {
+            return false;
+        }
+        throw new IllegalArgumentException("Unknown endianness: " + value);
     }
 
     /**
@@ -131,9 +176,11 @@ public class RandomStressTester {
      * @param numConcurrentTasks Number of concurrent tasks.
      * Twice as many threads will be started: one thread for the RNG and one
      * for the analyzer.
+     * @param littleEndian Set to {@code true} to reverse the output bytes to little-endian.
      */
     private void run(Iterable<UniformRandomProvider> generators,
-                     int numConcurrentTasks) {
+                     int numConcurrentTasks,
+                     boolean littleEndian) {
         // Parallel execution.
         final ExecutorService service = Executors.newFixedThreadPool(numConcurrentTasks);
 
@@ -143,6 +190,9 @@ public class RandomStressTester {
         // Run tasks.
         int count = 0;
         for (UniformRandomProvider rng : generators) {
+            if (littleEndian) {
+                rng = createReverseIntProvider(rng);
+            }
             final File output = new File(fileOutputPrefix + (++count));
             final Runnable r = new Task(rng, output);
             execOutput.add(service.submit(r));
@@ -180,6 +230,31 @@ public class RandomStressTester {
                  IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Wrap the random generator with an {@link IntProvider} that will reverse the byte order
+     * of the {@code int}.
+     *
+     * @param rng the random generator.
+     * @return the uniform random provider.
+     * @see Integer#reverseBytes(int)
+     */
+    private static UniformRandomProvider createReverseIntProvider(final UniformRandomProvider rng) {
+        // Note:
+        // This always uses an IntProvider even if the underlying RNG is a LongProvider.
+        // A LongProvider will produce 2 ints from 8 bytes of a long: 76543210 -> 7654 3210.
+        // This will be reversed to output 2 ints as: 4567 0123.
+        // This is a different output order than if reversing the entire long: 0123 4567.
+        // The effect is to output the most significant bits from the long first, and
+        // the least significant bits second. Thus the output of ints will be the same
+        // on big-endian and little-endian platforms.
+        return new IntProvider() {
+            @Override
+            public int next() {
+                return Integer.reverseBytes(rng.nextInt());
+            }
+        };
     }
 
     /**
