@@ -48,6 +48,8 @@
 
     <uberjar.name>examples-stress</uberjar.name>
     <project.mainClass>org.apache.commons.rng.examples.stress.RandomStressTester</project.mainClass>
+
+    <rng.picocli.version>3.9.5</rng.picocli.version>
   </properties>
 
   <dependencies>
@@ -55,10 +57,14 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-rng-simple</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-rng-sampling</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>${rng.picocli.version}</version>
     </dependency>
   </dependencies>
 
