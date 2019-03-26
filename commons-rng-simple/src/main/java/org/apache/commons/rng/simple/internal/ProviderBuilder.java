@@ -36,6 +36,8 @@ import org.apache.commons.rng.core.source32.Well44497b;
 import org.apache.commons.rng.core.source32.ISAACRandom;
 import org.apache.commons.rng.core.source32.MersenneTwister;
 import org.apache.commons.rng.core.source32.MultiplyWithCarry256;
+import org.apache.commons.rng.core.source32.MultiplyWithCarry256B;
+import org.apache.commons.rng.core.source32.MultiplyWithCarry256C;
 import org.apache.commons.rng.core.source32.KISSRandom;
 import org.apache.commons.rng.core.source64.SplitMix64;
 import org.apache.commons.rng.core.source64.XorShift1024Star;
@@ -308,6 +310,10 @@ public final class ProviderBuilder {
         /** Source of randomness is {@link MultiplyWithCarry256}. */
         MWC_256(MultiplyWithCarry256.class,
                 int[].class),
+        MWC_256B(MultiplyWithCarry256B.class,
+            int[].class),
+        MWC_256C(MultiplyWithCarry256C.class,
+            int[].class),
         /** Source of randomness is {@link KISSRandom}. */
         KISS(KISSRandom.class,
              int[].class),

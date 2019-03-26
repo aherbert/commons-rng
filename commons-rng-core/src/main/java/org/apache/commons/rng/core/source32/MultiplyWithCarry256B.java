@@ -32,7 +32,7 @@ import org.apache.commons.rng.core.util.NumberFactory;
  * @see <a href="https://en.wikipedia.org/wiki/Multiply-with-carry">Multiply with carry (Wikipedia)</a>
  * @since 1.0
  */
-public class MultiplyWithCarry256 extends IntProvider {
+public class MultiplyWithCarry256B extends IntProvider {
     /** Length of the state array. */
     private static final int Q_SIZE = 256;
     /** Size of the seed. */
@@ -54,7 +54,7 @@ public class MultiplyWithCarry256 extends IntProvider {
      * be used; if smaller, the remaining elements will be automatically
      * set.
      */
-    public MultiplyWithCarry256(int[] seed) {
+    public MultiplyWithCarry256B(int[] seed) {
         setSeedInternal(seed);
     }
 
@@ -109,18 +109,10 @@ public class MultiplyWithCarry256 extends IntProvider {
     /** {@inheritDoc} */
     @Override
     public int next() {
-        if (index == Q_SIZE) { // Whole state used up.
-            // Refill.
-            for (int i = 0; i < Q_SIZE; i++) {
-                final long t = A * (state[i] & 0xffffffffL) + carry;
-                carry = (int) (t >> 32);
-                state[i] = (int) t;
-            }
-
-            // Reset current index.
-            index = 0;
-        }
-
-        return state[index++];
+        // Produce an index in the range 0-255
+        final int i = index++ & 0xFF;
+        final long t = A * (state[i] & 0xffffffffL) + carry;
+        carry = (int) (t >> 32);
+        return state[i] = (int) t;
     }
 }

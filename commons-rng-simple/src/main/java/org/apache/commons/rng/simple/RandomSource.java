@@ -291,6 +291,8 @@ public enum RandomSource {
      * </ul>
      */
     MWC_256(ProviderBuilder.RandomSourceInternal.MWC_256),
+    MWC_256B(ProviderBuilder.RandomSourceInternal.MWC_256B),
+    MWC_256C(ProviderBuilder.RandomSourceInternal.MWC_256C),
     /**
      * Source of randomness is {@link org.apache.commons.rng.core.source32.KISSRandom}.
      * <ul>

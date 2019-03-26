@@ -29,8 +29,10 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.infra.Blackhole;
+
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.rng.RestorableUniformRandomProvider;
 import org.apache.commons.rng.UniformRandomProvider;
 import org.apache.commons.rng.simple.RandomSource;
 
@@ -53,25 +55,17 @@ public class GenerationPerformance {
         /**
          * RNG providers.
          */
-        @Param({"JDK",
-                "WELL_512_A",
-                "WELL_1024_A",
-                "WELL_19937_A",
-                "WELL_19937_C",
-                "WELL_44497_A",
-                "WELL_44497_B",
-                "MT",
-                "ISAAC",
-                "SPLIT_MIX_64",
+        @Param({
+                //"SPLIT_MIX_64",
                 "MWC_256",
-                "KISS",
-                "XOR_SHIFT_1024_S",
-                "TWO_CMRES",
-                "MT_64" })
+                "MWC_256B",
+                "MWC_256C",
+                //"Counter",
+                })
         private String randomSourceName;
 
         /** RNG. */
-        private UniformRandomProvider provider;
+        private RestorableUniformRandomProvider provider;
 
         /**
          * @return the RNG.
@@ -91,7 +85,12 @@ public class GenerationPerformance {
     /**
      * Number of random values to generate.
      */
-    @Param({"1", "100", "10000", "1000000"})
+    @Param({
+        //"1", 
+        //"100", 
+        //"10000", 
+        "1000000",
+        })
     private int numValues;
 
     /**
@@ -99,11 +98,13 @@ public class GenerationPerformance {
      * @param bh Data sink.
      */
     @Benchmark
-    public void nextBoolean(Sources sources,
-                            Blackhole bh) {
+    public void nextInt(Sources sources, Blackhole bh) {
+        int value = 0;
+        UniformRandomProvider rng = sources.getGenerator(); 
         for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextBoolean());
+            value = rng.nextInt();
         }
+        bh.consume(value);
     }
 
     /**
@@ -111,11 +112,13 @@ public class GenerationPerformance {
      * @param bh Data sink.
      */
     @Benchmark
-    public void nextInt(Sources sources,
-                        Blackhole bh) {
+    public void nextLong(Sources sources, Blackhole bh) {
+        long value = 0;
+        UniformRandomProvider rng = sources.getGenerator(); 
         for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextInt());
+            value = rng.nextLong();
         }
+        bh.consume(value);
     }
 
     /**
@@ -123,12 +126,13 @@ public class GenerationPerformance {
      * @param bh Data sink.
      */
     @Benchmark
-    public void nextIntN(Sources sources,
-                         Blackhole bh) {
-        final int n = 10;
+    public void nextFloat(Sources sources, Blackhole bh) {
+        float value = 0;
+        UniformRandomProvider rng = sources.getGenerator(); 
         for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextInt(n));
+            value = rng.nextFloat();
         }
+        bh.consume(value);
     }
 
     /**
@@ -136,59 +140,12 @@ public class GenerationPerformance {
      * @param bh Data sink.
      */
     @Benchmark
-    public void nextLong(Sources sources,
-                         Blackhole bh) {
+    public void nextDouble(Sources sources, Blackhole bh) {
+        double value = 0;
+        UniformRandomProvider rng = sources.getGenerator(); 
         for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextLong());
+            value = rng.nextDouble();
         }
-    }
-
-    /**
-     * @param sources Source of randomness.
-     * @param bh Data sink.
-     */
-    @Benchmark
-    public void nextLongN(Sources sources,
-                          Blackhole bh) {
-        final long n = 2L * Integer.MAX_VALUE;
-        for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextLong(n));
-        }
-    }
-
-    /**
-     * @param sources Source of randomness.
-     * @param bh Data sink.
-     */
-    @Benchmark
-    public void nextFloat(Sources sources,
-                          Blackhole bh) {
-        for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextFloat());
-        }
-    }
-
-    /**
-     * @param sources Source of randomness.
-     * @param bh Data sink.
-     */
-    @Benchmark
-    public void nextDouble(Sources sources,
-                           Blackhole bh) {
-        for (int i = 0; i < numValues; i++) {
-            bh.consume(sources.getGenerator().nextDouble());
-        }
-    }
-
-    /**
-     * @param sources Source of randomness.
-     * @param bh Data sink.
-     */
-    @Benchmark
-    public void nextBytes(Sources sources,
-                          Blackhole bh) {
-        final byte[] result = new byte[numValues];
-        sources.getGenerator().nextBytes(result);
-        bh.consume(result);
+        bh.consume(value);
     }
 }
