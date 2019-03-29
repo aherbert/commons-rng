@@ -60,7 +60,7 @@ import org.apache.commons.rng.simple.internal.ProviderBuilder.RandomSourceIntern
  *
  * <p>Note that random number providers are created and then used. Thus the construction time must
  * be analysed together with the run time performance benchmark (see
- * {@link GenerationPerformance}).
+ * {@link GenerationPerformance1}).
  *
  * <pre>
  * [Total time] = [Construction time] + [Run time]
