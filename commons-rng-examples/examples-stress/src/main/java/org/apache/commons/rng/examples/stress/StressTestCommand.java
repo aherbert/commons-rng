@@ -102,7 +102,7 @@ class StressTestCommand implements Callable<Void> {
     @Option(names = {"-n", "--tasks"},
             description = {"Number of concurrent tasks (default: ${DEFAULT-VALUE}).",
                            "Two threads are required per task." })
-    private int taskCount = 4;
+    private int taskCount = Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
 
     /** The output byte order of the binary data. */
     @Option(names = {"-b", "--byte-order"},
