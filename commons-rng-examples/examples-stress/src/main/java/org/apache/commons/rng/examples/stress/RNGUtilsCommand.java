@@ -71,9 +71,11 @@ class RNGUtilsCommand implements Callable<Void> {
 
         // Build the command line manually so we can configure options.
         final CommandLine cmd = new CommandLine(tester)
-                .addSubcommand("stress", new CommandLine(new StressTestCommand())
-                                                         .setStopAtPositional(true))
-                .addSubcommand("list",   new ListCommand())
+                .addSubcommand("stress",     new CommandLine(new StressTestCommand())
+                                                             .setStopAtPositional(true))
+                .addSubcommand("list",       new ListCommand())
+                .addSubcommand("properties", new PropertiesCommand())
+                .addSubcommand("system",     new SystemInfoCommand())
                 // Call last to apply to all sub-commands
                 .setCaseInsensitiveEnumValuesAllowed(true);
 
