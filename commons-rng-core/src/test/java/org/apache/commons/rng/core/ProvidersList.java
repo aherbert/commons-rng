@@ -34,6 +34,7 @@ import org.apache.commons.rng.core.source32.Well44497a;
 import org.apache.commons.rng.core.source32.Well44497b;
 import org.apache.commons.rng.core.source32.ISAACRandom;
 import org.apache.commons.rng.core.source32.MersenneTwister;
+import org.apache.commons.rng.core.source32.MiddleSquareWeylSequence;
 import org.apache.commons.rng.core.source32.MultiplyWithCarry256;
 import org.apache.commons.rng.core.source32.KISSRandom;
 import org.apache.commons.rng.core.source64.SplitMix64;
@@ -90,6 +91,7 @@ public class ProvidersList {
             add(LIST32, new XoRoShiRo64StarStar(new int[] { g.nextInt(), g.nextInt(), g.nextInt() }));
             add(LIST32, new XoShiRo128Plus(new int[] { g.nextInt(), g.nextInt(), g.nextInt() }));
             add(LIST32, new XoShiRo128StarStar(new int[] { g.nextInt(), g.nextInt(), g.nextInt() }));
+            add(LIST32, new MiddleSquareWeylSequence(g.nextLong()));
             // ... add more here.
 
             // "long"-based RNGs.

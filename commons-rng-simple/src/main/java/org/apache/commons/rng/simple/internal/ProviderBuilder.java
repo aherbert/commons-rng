@@ -35,6 +35,7 @@ import org.apache.commons.rng.core.source32.Well44497a;
 import org.apache.commons.rng.core.source32.Well44497b;
 import org.apache.commons.rng.core.source32.ISAACRandom;
 import org.apache.commons.rng.core.source32.MersenneTwister;
+import org.apache.commons.rng.core.source32.MiddleSquareWeylSequence;
 import org.apache.commons.rng.core.source32.MultiplyWithCarry256;
 import org.apache.commons.rng.core.source32.KISSRandom;
 import org.apache.commons.rng.core.source32.XoRoShiRo64Star;
@@ -354,6 +355,9 @@ public final class ProviderBuilder {
         /** Source of randomness is {@link XoShiRo512StarStar}. */
         XO_SHI_RO_512_SS(XoShiRo512StarStar.class,
                          long[].class),
+        /** Source of randomness is {@link MiddleSquareWeylSequence}. */
+        MSWS(MiddleSquareWeylSequence.class,
+                         Long.class),
         ;
 
         /** Source type. */

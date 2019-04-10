@@ -387,6 +387,14 @@ public enum RandomSource {
      * </ul>
      */
     XO_SHI_RO_512_SS(ProviderBuilder.RandomSourceInternal.XO_SHI_RO_512_SS),
+    /**
+     * Source of randomness is {@link org.apache.commons.rng.core.source32.MiddleSquareWeylSequence}.
+     * <ul>
+     *  <li>Native seed type: {@code Long}.</li>
+     *  <li>Native seed size: 1.</li>
+     * </ul>
+     */
+    MSWS(ProviderBuilder.RandomSourceInternal.MSWS),
     ;
 
     /** Internal identifier. */
