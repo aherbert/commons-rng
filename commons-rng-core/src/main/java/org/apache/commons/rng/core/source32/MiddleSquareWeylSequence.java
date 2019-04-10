@@ -75,6 +75,9 @@ public class MiddleSquareWeylSequence extends IntProvider {
         // Note that the effect is that if seeded using an example seed value from the
         // MSWS RNG paper the generator will match:
         // x = w = s = seed
+        // However DO NOT use the increment as the initial state, use the seed.
+        // This prevents extremely low complexity seeds (e.g. 1, 2, 3) to produce
+        // the same sequence even though the increment may be modified to be the same.
         x1 = seed;
         w1 = seed;
         s1 = createWeylIncrement(seed);
