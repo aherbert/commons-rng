@@ -64,18 +64,4 @@ public class MiddleSquareWeylSequenceTest {
 
         RandomAssert.assertEquals(expectedSequence, new MiddleSquareWeylSequence(seed));
     }
-    
-    @Test
-    public void testLowComplexitySeeds() {
-        for (long seed : new long[] { 1, 2, 3, 4, -1, -2, -3, (1L << 63), (1L << 62) }) {
-            MiddleSquareWeylSequence rng = new MiddleSquareWeylSequence(seed);
-            System.out.printf("seed = %d%n", seed);
-            //for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 10; j++) {
-                    System.out.printf("%-12d ", rng.nextInt());
-                }
-                System.out.println();
-            //}
-        }
-    }
 }
