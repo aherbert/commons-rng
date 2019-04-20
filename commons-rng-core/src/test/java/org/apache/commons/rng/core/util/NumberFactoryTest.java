@@ -20,7 +20,9 @@ import org.apache.commons.math3.util.Precision;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.Random;
 
 /**
@@ -243,6 +245,243 @@ public class NumberFactoryTest {
         for (int i = 0; i < 100; i++) {
             assertMakeIntInRange(rng.nextInt(), rng.nextInt(Integer.MAX_VALUE));
         }
+    }
+
+    @Test
+    public void testBias() {
+//        BigInteger max = BigInteger.ONE.shiftLeft(32);
+//        BigDecimal max2 = new BigDecimal(max);
+//        for (int i = 1; i < 32; i++) {
+//            long n = (1L << i) + 1;
+//            BigInteger value = BigInteger.valueOf(n);
+//            BigInteger[] result = max.divideAndRemainder(value);
+//            BigDecimal bd1 = new BigDecimal(value).divide(max2, 10, RoundingMode.HALF_UP);
+//            BigDecimal bd2 = new BigDecimal(result[1]).divide(max2, 10, RoundingMode.HALF_UP);
+//            System.out.printf("|%d|%s|%s|%s|%s|%s|%n", n, result[0], result[1],
+//                    //new BigDecimal(result[1]).divide(max2, 10, RoundingMode.HALF_UP)
+//                    bd1,
+//                    bd2,
+//                    //bd1.subtract(bd2).divide(bd1, 10, RoundingMode.HALF_UP)
+//                    new BigDecimal(result[1]).divide(new BigDecimal(value), 10, RoundingMode.HALF_UP)
+//                    );
+//        }
+
+        // If remainder is >= (range-extras) then reject it?
+        // these are samples that are over represented.
+
+        //int nn = 257;
+        //final int fence = (int)((0x80000000L / nn) * nn);
+        //System.out.printf("fence = %d%n", fence);
+        //System.out.printf("fence = %d%n", (0x80000000 / nn) * -nn);
+        
+        int range = 16; // 2^4
+        for (int n = 1; n <= range; n++) {
+            // Output number of samples expected for each value in range [0,n)
+            int numberOfSamples = range / n;
+            // Output number of extra samples. These must be rejected.
+            int extra = range % n;
+            
+            // frequency * numberOfSamples + frequency1 * (numberOfSamples + 1) = range
+
+            // Frequency each number is seen (number of samples) times
+            int frequency = n - extra;
+            // Frequency each number is seen (number of samples + 1) times
+            int frequency1 = extra;
+            
+            
+            // Output rejection rate.
+            double rejectionProbability = (double) extra / range;
+            // Output bias (mean and variance of number of samples) if not rejected.
+            double mean = (double) range / n;
+            double var  = 0;
+            if (extra != 0) {
+                double dx = mean - numberOfSamples;
+                double sum = frequency * dx * dx;
+                dx = 1 - dx;
+                sum += frequency1 * dx * dx;
+                var = sum / n;
+            }
+            
+            // Output limit for rejection if using modulus operator
+            // Output limit for rejection on remainder if using multiply, divide and remainder.
+
+            System.out.printf("[n=%d/%d] %d*%d/%d, %d*%d/%d (%.3f +/- %.3f) %f%n",
+                    n, range,
+                    frequency, numberOfSamples, range,
+                    frequency1, numberOfSamples + 1, range,
+                    mean, var, rejectionProbability);
+
+            
+            
+            
+            // q. How to explain the rejection level on the remainder. It works to use
+            // the extra samples. this will never exceed n and so if n is bounded to be positive
+            // rejection can be signed.
+            // the rejection level is a fraction [extra] / 2^b. Any remainder within this fraction
+            // is rejected.
+            
+            
+            System.out.printf("[n=%d/%d] samples %d (%.3f), extra %d / %d, fence=%d  %d  %d  %d  %d, reject fence %d %d%n", 
+                    n, range, 
+                    numberOfSamples, (double)range / n, 
+                    // extra method to use: range is a power of 2.
+                    // can be supported using long but for long requires big integer.
+                    extra,
+                    n,
+                    // val = bits % n
+                    // bits - val + (n - 1) < 0
+                    // bits < val - n + 1
+                    range - (range % n),
+                    n & -n,
+                    n & (n-1),
+                    // This is the fence method to use:
+                    (range / n) * n,
+                    ((range / n) * n) << 1,
+                    // Better way to compute reject fence avoiding modulus?
+                    // Or do it same way as the while loop:
+                    // bits - val + (n - 1) < 0
+                    // If the remainder + value > range then reject.
+                    range - range % n,
+                    (range-1) - ((range-1) / n) * n
+                    );
+            int[] h = new int[n];
+            for (int i = 0; i < range; i++) {
+                int sample = (n * i) / range;
+                h[sample]++;
+                System.out.printf("%d %d %% %d%n", i, sample, (n * i) & (range-1));
+            }
+            int min = h[0];
+            int max = min;
+            for (int i = 0; i < n; i++) {
+                min = Math.min(min, h[i]);
+                max = Math.max(max, h[i]);
+                System.out.printf("%d %d%n", i, h[i]);
+            }
+            int[] h2 = new int[2];
+            for (int i = 0; i < n; i++) {
+                h2[h[i] - min]++;
+            }
+            System.out.printf("%d=%d %d=%d%n", min, h2[0], max, h2[1]);
+        }
+    }
+
+    @Test
+    public void outputBiasTable() {
+        outputBiasTable(32, 31);
+    }
+    
+    private void outputBiasTable(int power, int maxPower) {
+//        BigInteger max = BigInteger.ONE.shiftLeft(32);
+//        BigDecimal max2 = new BigDecimal(max);
+//        for (int i = 1; i < 32; i++) {
+//            long n = (1L << i) + 1;
+//            BigInteger value = BigInteger.valueOf(n);
+//            BigInteger[] result = max.divideAndRemainder(value);
+//            BigDecimal bd1 = new BigDecimal(value).divide(max2, 10, RoundingMode.HALF_UP);
+//            BigDecimal bd2 = new BigDecimal(result[1]).divide(max2, 10, RoundingMode.HALF_UP);
+//            System.out.printf("|%d|%s|%s|%s|%s|%s|%n", n, result[0], result[1],
+//                    //new BigDecimal(result[1]).divide(max2, 10, RoundingMode.HALF_UP)
+//                    bd1,
+//                    bd2,
+//                    //bd1.subtract(bd2).divide(bd1, 10, RoundingMode.HALF_UP)
+//                    new BigDecimal(result[1]).divide(new BigDecimal(value), 10, RoundingMode.HALF_UP)
+//                    );
+//        }
+
+        // update this to BigInteger to support all possibilities
+        
+        
+        long range = 1L << power; // 2^4
+        // skip powers 1,2
+        for (int p = 3; p <= maxPower; p++) {
+            
+            // Best case scenario
+            // 2^power / 2^p = x samples = 2^(power-p) 
+            long x = 1L << (power - p);
+            
+            // Worst case scenario output is half the numbers are over-sampled:
+            // 2^power / n = x.5
+            long upper = Math.round(range / (0.5 + x));
+            
+            // Output number of extra samples. These must be rejected.
+            long extra = range % upper;
+            
+            // Search down until extra is close to half of n
+            long lower = upper >>> 1;
+            double ratio = (double) Math.max(upper - extra, extra) / upper;
+            long n = upper;
+            while (upper > lower && ratio > 0.52 && Math.abs(upper - 2 * extra) > 1) {
+                long ex = range % (--upper);
+                double newRatio = (double) Math.max(upper - ex, ex) / upper;
+                if (newRatio < ratio) {
+                    ratio = newRatio;
+                    n = upper;
+                    extra = ex;
+                }
+            }
+
+            // Output number of samples expected for each value in range [0,n)
+            long numberOfSamples = range / n;
+            
+            // frequency * numberOfSamples + frequency1 * (numberOfSamples + 1) = range
+
+            // Frequency each number is seen (number of samples) times
+            long frequency = n - extra;
+            // Frequency each number is seen (number of samples + 1) times
+            long frequency1 = extra;
+            
+            
+            // Output rejection rate.
+            double rejectionProbability = (double) extra / range;
+            // Output bias (mean and variance of number of samples) if not rejected.
+            double mean = (double) range / n;
+            double var  = 0;
+            if (extra != 0) {
+                double dx = mean - numberOfSamples;
+                double sum = frequency * dx * dx;
+                dx = 1 - dx;
+                sum += frequency1 * dx * dx;
+                var = sum / n;
+            }
+
+            // Output rejection rate.
+            double rejectionProbability2 = (double) (range % ((1L << (p-1)) + 1)) / range;
+
+            // Output limit for rejection if using modulus operator
+            // Output limit for rejection on remainder if using multiply, divide and remainder.
+
+            System.out.printf("2^%d [n=%d] %d*%d, %d*%d (%.3g +/- %.3g) %.3g  %.3g%n",
+                    p, n,
+                    frequency, numberOfSamples,
+                    frequency1, numberOfSamples + 1,
+                    mean, var, 
+                    rejectionProbability, rejectionProbability2);
+        }
+    }
+
+    @Test
+    public void testConverge() {
+        long bits = 0xffffffffL;
+        while (bits != 0) {
+            testConverge(bits);
+            bits >>>= 1;
+        }
+    }
+
+    private void testConverge(long bits) {
+        long n = 0;
+        int n2 = 0;
+        final long limit = 0;
+        long result = bits;
+        System.out.printf("first %d = %s : ", result, Long.toBinaryString(result));
+        while (result > limit) {
+            result = (result * bits) >>> 32;
+            n++;
+            n2++;
+        }
+        System.out.printf("n=%d (%s) [%s %d] %d = %s%n", n, n >= Integer.MAX_VALUE, 
+                Integer.toUnsignedString(n2), n2 & 0x7fffffff,
+                result, Long.toBinaryString(result));
     }
 
     @Test

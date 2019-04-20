@@ -25,6 +25,7 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Fork;
@@ -62,7 +63,7 @@ public class IntegerInRangeGenerationPerformance {
         @Param({"SPLIT_MIX_64",
                 // Comment in for slower generators
                 //"MWC_256", "KISS", "WELL_1024_A",
-                "WELL_44497_B"
+                //"WELL_44497_B"
                 })
         private String randomSourceName;
 
@@ -101,7 +102,7 @@ public class IntegerInRangeGenerationPerformance {
          * </pre>
          */
         @Param({
-            "256", // Even: 1 << 8
+            //"256", // Even: 1 << 8
             "257", // Prime number
             "1073741825", // Worst case: (1 << 30) + 1
             })
@@ -167,6 +168,10 @@ public class IntegerInRangeGenerationPerformance {
             // Range is a power of 2
             return rng.nextInt() & nm1;
         }
+
+        // Biased modulus method
+        //return (rng.nextInt() >>> 1) % n;
+
         int bits;
         int val;
         do {
@@ -174,6 +179,131 @@ public class IntegerInRangeGenerationPerformance {
             val = bits % n;
         } while (bits - val + nm1 < 0);
         return val;
+    }
+
+    /**
+     * Generates an {@code int} value between 0 (inclusive) and the
+     * specified value (exclusive) using a bit source of randomness.
+     *
+     * @param rng Value to use as a source of randomness.
+     * @param n Bound on the random number to be returned. Must be positive.
+     * @return a random {@code int} value between 0 (inclusive) and {@code n}
+     * (exclusive).
+     * @throws IllegalArgumentException if {@code n} is negative.
+     */
+    private static int nextIntFence(UniformRandomProvider rng, int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException();
+        }
+        final int nm1 = n - 1;
+        if ((n & nm1) == 0) {
+            // Range is a power of 2
+            return rng.nextInt() & nm1;
+        }
+
+        // Biased modulus method
+        //return (rng.nextInt() >>> 1) % n;
+
+//        // Fence is a positive number
+//        final int fence = (int)(((1L << 31) / n) * n);
+//        //System.out.printf("%d fence %d%n", n, fence);
+//
+//        int bits;
+//        do {
+//            bits = rng.nextInt() >>> 1;
+//        } while (bits >= fence);
+//
+//        return bits % n;
+
+        int bits = rng.nextInt() >>> 1;
+        int val = bits % n;
+        if (bits - val + nm1 < 0) {
+            // Rejection method
+            final int fence = bits - val;
+            //System.out.printf("%d fence %d %d%n", n, fence, (int)((0x80000000L / n) * n));
+            do {
+                bits = rng.nextInt() >>> 1;
+            } while (bits >= fence);
+            return bits % n;
+        }
+        return val;
+    }
+
+    /**
+     * Generates an {@code int} value between 0 (inclusive) and the
+     * specified value (exclusive) using a bit source of randomness.
+     *
+     * @param rng Value to use as a source of randomness.
+     * @param n Bound on the random number to be returned. Must be positive.
+     * @return a random {@code int} value between 0 (inclusive) and {@code n}
+     * (exclusive).
+     * @throws IllegalArgumentException if {@code n} is negative.
+     */
+    private static int nextIntFence(UniformRandomProvider rng, int n, int fence) {
+        if (n <= 0) {
+            throw new IllegalArgumentException();
+        }
+        final int nm1 = n - 1;
+        if ((n & nm1) == 0) {
+            // Range is a power of 2
+            return rng.nextInt() & nm1;
+        }
+
+        // Rejection method
+        int bits;
+        do {
+            bits = rng.nextInt() >>> 1;
+        } while (bits >= fence);
+        return bits % n;
+    }
+
+    /**
+     * Generates an {@code int} value between 0 (inclusive) and the
+     * specified value (exclusive) using a bit source of randomness.
+     *
+     * @param rng Value to use as a source of randomness.
+     * @param n Bound on the random number to be returned. Must be positive.
+     * @return a random {@code int} value between 0 (inclusive) and {@code n}
+     * (exclusive).
+     * @throws IllegalArgumentException if {@code n} is negative.
+     */
+    private static int nextIntMultiplyFence(UniformRandomProvider rng, int n, long fence) {
+        if (n <= 0) {
+            throw new IllegalArgumentException();
+        }
+        final int nm1 = n - 1;
+        if ((n & nm1) == 0) {
+            // Range is a power of 2
+            return rng.nextInt() & nm1;
+        }
+
+        // Rejection method using multiply and remainder
+        long result;
+        do {
+            result = n * (rng.nextInt() & 0xffffffffL);
+        } while ((result & 0xffffffffL) < fence);
+        return (int)(result >>> 32);
+    }
+
+    /**
+     * Generates an {@code int} value between 0 (inclusive) and the
+     * specified value (exclusive) using a bit source of randomness.
+     *
+     * @param rng Value to use as a source of randomness.
+     * @param n Bound on the random number to be returned. Must be positive.
+     * @return a random {@code int} value between 0 (inclusive) and {@code n}
+     * (exclusive).
+     * @throws IllegalArgumentException if {@code n} is negative.
+     */
+    private static int nextIntMultiplyFence2(UniformRandomProvider rng, int n, long fence) {
+        // No checks to test max speed
+        
+        // Rejection method using multiply and remainder
+        long result;
+        do {
+            result = n * (rng.nextInt() & 0xffffffffL);
+        } while ((result & 0xffffffffL) < fence);
+        return (int)(result >>> 32);
     }
 
     /**
@@ -195,22 +325,31 @@ public class IntegerInRangeGenerationPerformance {
             // Range is a power of 2
             return rng.nextLong() & nm1;
         }
-        long bits;
-        long val;
-        do {
-            bits = rng.nextLong() >>> 1;
-            val = bits % n;
-        } while (bits - val + nm1 < 0);
-        return val;
+
+        // Biased modulus method
+        return (rng.nextLong() >>> 1) % n;
+
+        //        long bits;
+        //        long val;
+        //        do {
+        //            bits = rng.nextLong() >>> 1;
+        //            val = bits % n;
+        //        } while (bits - val + nm1 < 0);
+        //        return val;
     }
 
     // Benchmark methods
+    
+    @Param({
+        "10000",
+        })
+    private int loops;
 
     /**
      * @param source the source
      * @return the result
      */
-    @Benchmark
+    //@Benchmark
     public int nextIntBaseline(Sources source) {
         return source.getGenerator().nextInt();
     }
@@ -218,11 +357,47 @@ public class IntegerInRangeGenerationPerformance {
     /**
      * @param source the source
      * @param range the range
-     * @return the result
      */
     @Benchmark
-    public int nextIntRejectionMethod(Sources source, IntRange range) {
-        return nextInt(source.getGenerator(), range.getUpperBound());
+    public void nextIntRejectionMethod(Blackhole bh, Sources source, IntRange range) {
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextInt(source.getGenerator(), range.getUpperBound()));
+        }
+    }
+
+    /**
+     * @param source the source
+     * @param range the range
+     */
+    @Benchmark
+    public void nextIntFenceMethod(Blackhole bh, Sources source, IntRange range) {
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntFence(source.getGenerator(), range.getUpperBound()));
+        }
+    }
+
+    @Benchmark
+    public void nextIntPreFenceMethod(Blackhole bh, Sources source, IntRange range) {
+        int fence = Integer.MAX_VALUE - Integer.MAX_VALUE % range.getUpperBound();
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntFence(source.getGenerator(), range.getUpperBound(), fence));
+        }
+    }
+
+    @Benchmark
+    public void nextIntMultiplyPreFenceMethod(Blackhole bh, Sources source, IntRange range) {
+        long fence = (1L << 32) % range.getUpperBound();
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntMultiplyFence(source.getGenerator(), range.getUpperBound(), fence));
+        }
+    }
+
+    @Benchmark
+    public void nextIntMultiplyPreFenceMethod2(Blackhole bh, Sources source, IntRange range) {
+        long fence = (1L << 32) % range.getUpperBound();
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntMultiplyFence2(source.getGenerator(), range.getUpperBound(), fence));
+        }
     }
 
     /**
@@ -230,7 +405,7 @@ public class IntegerInRangeGenerationPerformance {
      * @param range the range
      * @return the result
      */
-    @Benchmark
+    //@Benchmark
     public long nextIntNumberFactory(Sources source, IntRange range) {
         return NumberFactory.makeIntInRange(source.getGenerator().nextInt(), range.getUpperBound());
     }
@@ -239,7 +414,7 @@ public class IntegerInRangeGenerationPerformance {
      * @param source the source
      * @return the result
      */
-    @Benchmark
+    //@Benchmark
     public long nextLongBaseline(Sources source) {
         return source.getGenerator().nextLong();
     }
@@ -249,7 +424,7 @@ public class IntegerInRangeGenerationPerformance {
      * @param range the range
      * @return the result
      */
-    @Benchmark
+    //@Benchmark
     public long nextLongRejectionMethod(Sources source, LongRange range) {
         return nextLong(source.getGenerator(), range.getUpperBound());
     }
@@ -259,7 +434,7 @@ public class IntegerInRangeGenerationPerformance {
      * @param range the range
      * @return the result
      */
-    @Benchmark
+    //@Benchmark
     public long nextLongNumberFactory(Sources source, LongRange range) {
         return NumberFactory.makeLongInRange(source.getGenerator().nextLong(), range.getUpperBound());
     }
