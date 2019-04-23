@@ -66,6 +66,16 @@ public class JDKRandom extends IntProvider {
 
     /** {@inheritDoc} */
     @Override
+    public int nextInt(int n) {
+        // The BaseProvider favours the least significant bits when n is a
+        // power of 2. This is not recommended for java.util.Random.
+        // Use the native algorithm that favours the most significant bits
+        // when n is a power of 2.
+        return delegate.nextInt(n);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     protected byte[] getStateInternal() {
         try {
             final ByteArrayOutputStream bos = new ByteArrayOutputStream();

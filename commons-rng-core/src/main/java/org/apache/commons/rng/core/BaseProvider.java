@@ -25,20 +25,29 @@ import org.apache.commons.rng.RandomProviderState;
  */
 public abstract class BaseProvider
     implements RestorableUniformRandomProvider {
+    /** The error message when a value is not strictly positive. */
+    private static final String MSG_STRICTLY_POSITIVE = "Must be strictly positive: ";
+
     /** {@inheritDoc} */
     @Override
     public int nextInt(int n) {
-        checkStrictlyPositive(n);
-
-        if ((n & -n) == n) {
-            return (int) ((n * (long) (nextInt() >>> 1)) >> 31);
+        if (n <= 0) {
+            throw new IllegalArgumentException(MSG_STRICTLY_POSITIVE + n);
         }
+
+        final int nm1 = n - 1;
+        if ((n & nm1) == 0) {
+            // Range is a power of 2
+            return nextInt() & nm1;
+        }
+
+        // Rejection method
         int bits;
         int val;
         do {
             bits = nextInt() >>> 1;
             val = bits % n;
-        } while (bits - val + (n - 1) < 0);
+        } while (bits - val + nm1 < 0);
 
         return val;
     }
@@ -46,14 +55,23 @@ public abstract class BaseProvider
     /** {@inheritDoc} */
     @Override
     public long nextLong(long n) {
-        checkStrictlyPositive(n);
+        if (n <= 0) {
+            throw new IllegalArgumentException(MSG_STRICTLY_POSITIVE + n);
+        }
 
+        final long nm1 = n - 1;
+        if ((n & nm1) == 0) {
+            // Range is a power of 2
+            return nextLong() & nm1;
+        }
+
+        // Rejection method
         long bits;
         long val;
         do {
             bits = nextLong() >>> 1;
             val  = bits % n;
-        } while (bits - val + (n - 1) < 0);
+        } while (bits - val + nm1 < 0);
 
         return val;
     }
@@ -274,18 +292,6 @@ public abstract class BaseProvider
             throw new IndexOutOfBoundsException(index + " is out of interval [" +
                                                 min + ", " +
                                                 max + "]");
-        }
-    }
-
-    /**
-     * Checks that the argument is strictly positive.
-     *
-     * @param n Number to check.
-     * @throws IllegalArgumentException if {@code n <= 0}.
-     */
-    private void checkStrictlyPositive(long n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException("Must be strictly positive: " + n);
         }
     }
 
