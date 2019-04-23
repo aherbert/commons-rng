@@ -16,6 +16,7 @@
  */
 package org.apache.commons.rng.core.util;
 
+import org.apache.commons.math3.distribution.ChiSquaredDistribution;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Assert;
 import org.junit.Test;
@@ -348,7 +349,7 @@ public class NumberFactoryTest {
             for (int i = 0; i < range; i++) {
                 int sample = (n * i) / range;
                 h[sample]++;
-                System.out.printf("%d %d %% %d%n", i, sample, (n * i) & (range-1));
+                System.out.printf("%d %d %% %d  or %d%n", i, sample, (n * i) & (range-1), i % n);
             }
             int min = h[0];
             int max = min;
@@ -367,7 +368,7 @@ public class NumberFactoryTest {
 
     @Test
     public void outputBiasTable() {
-        outputBiasTable(32, 31);
+        outputBiasTable(31, 31);
     }
     
     private void outputBiasTable(int power, int maxPower) {
@@ -391,9 +392,13 @@ public class NumberFactoryTest {
         // update this to BigInteger to support all possibilities
         
         
-        long range = 1L << power; // 2^4
+        long range = 1L << power;
+        System.out.printf("||Upper||n||mean (u)||sd||Frequency(floor(u))||p(floor(u)))||Frequency(ceil(u))||p(ceil(u))||%n");
+        
         // skip powers 1,2
         for (int p = 3; p <= maxPower; p++) {
+            
+            //long n = (1L << p) - 1;
             
             // Best case scenario
             // 2^power / 2^p = x samples = 2^(power-p) 
@@ -401,22 +406,29 @@ public class NumberFactoryTest {
             
             // Worst case scenario output is half the numbers are over-sampled:
             // 2^power / n = x.5
-            long upper = Math.round(range / (0.5 + x));
+            // 2^(power+1) / n = 2x + 1
+            // n = 2^(power+1) / (2x + 1)
+            //long upperN = (long) Math.floor(range / (0.5 + x));
+            long upperN = 2 * range / (2 * x + 1);
             
             // Output number of extra samples. These must be rejected.
-            long extra = range % upper;
+            long extra = range % upperN;
+            
+            // Do a loop to compute every modulus in the range
+            // Then report the mean and std dev and mean rejection probability.
             
             // Search down until extra is close to half of n
-            long lower = upper >>> 1;
-            double ratio = (double) Math.max(upper - extra, extra) / upper;
-            long n = upper;
-            while (upper > lower && ratio > 0.52 && Math.abs(upper - 2 * extra) > 1) {
-                long ex = range % (--upper);
-                double newRatio = (double) Math.max(upper - ex, ex) / upper;
-                if (newRatio < ratio) {
-                    ratio = newRatio;
-                    n = upper;
+            long lowerN = upperN >>> 1;
+            long n = upperN;
+            long gap = Math.abs(upperN - 2 * extra);
+            while (upperN > lowerN && gap > 1) {
+                long ex = range % (--upperN);
+                long newGap = Math.abs(upperN - 2 * ex);
+                //if (newRatio < ratio) {
+                if (newGap < gap) {
+                    n = upperN;
                     extra = ex;
+                    gap = newGap;
                 }
             }
 
@@ -436,12 +448,19 @@ public class NumberFactoryTest {
             // Output bias (mean and variance of number of samples) if not rejected.
             double mean = (double) range / n;
             double var  = 0;
+            // chi squared test for uniformity?
+            // chi1 = sum (obs - exp)^2 / exp
+            double chi2 = 0;
             if (extra != 0) {
                 double dx = mean - numberOfSamples;
                 double sum = frequency * dx * dx;
                 dx = 1 - dx;
                 sum += frequency1 * dx * dx;
+                chi2 = sum / mean;
                 var = sum / n;
+
+                // Do chi2 using the unbiased distribution to set the expected
+                //chi2 = (double) frequency1 / numberOfSamples;
             }
 
             // Output rejection rate.
@@ -450,12 +469,58 @@ public class NumberFactoryTest {
             // Output limit for rejection if using modulus operator
             // Output limit for rejection on remainder if using multiply, divide and remainder.
 
-            System.out.printf("2^%d [n=%d] %d*%d, %d*%d (%.3g +/- %.3g) %.3g  %.3g%n",
+            final ChiSquaredDistribution distribution = new ChiSquaredDistribution(null, n - 1.0);
+            double pvalue = 1.0 - distribution.cumulativeProbability(chi2);
+
+            // TODO
+            // Better table format for Jira showing example worst variance.
+            // State that the output is uniform from a Chi2 test perspective as the number
+            // in each bin is either x or x+1 after full sampling. But is not the ideal x
+            // so output the number that have to be rejected to achieve this.
+            // Do average case and worst case.
+            
+            // New table with the rejection probability for all powers of 2 + 1, i.e. worst case
+            // Show that multiplication using 32-bit int has lower rejection probability.
+            
+            // Show an example of the output from the multiplication method to demonstrate
+            // it works. Modify the uniform sampler to use this method and speed test.
+            
+            System.out.printf("|2^%d|%d|%.3f|%.3f|%d|%d|%d|%d|%n",
                     p, n,
+                    mean, var,
                     frequency, numberOfSamples,
-                    frequency1, numberOfSamples + 1,
-                    mean, var, 
-                    rejectionProbability, rejectionProbability2);
+                    frequency1, numberOfSamples + 1);
+        }
+    }
+    
+    @Test
+    public void outputRejectionTable() {
+        System.out.printf("|| || ||2^31|| ||2^32|| ||%n");
+        System.out.printf("||Lower||Upper||mean||max||mean||max||%n");
+        long range31 = 1L << 31;
+        long range32 = 1L << 32;
+        
+        // skip powers 1,2
+        for (int p = 3; p <= 31; p++) {
+            long upper = (1L << p);
+            long lower = upper >>> 1;
+            long count = lower;
+            long sum31 = 0;
+            long sum32 = 0;
+            long max31 = 0;
+            long max32 = 0;
+            for (long i = lower; i < upper; i++) {
+                long mod31 = range31 % i;
+                sum31 += mod31;
+                max31 = Math.max(max31, mod31);
+                long mod32 = range32 % i;
+                sum32 += mod32;
+                max32 = Math.max(max32, mod32);
+            }
+            System.out.printf("|2^%d|2^%d|%.5g|%.5g|%.5g|%.5g|%n",
+                    p-1, p,
+                    (double) sum31 / count / range31, (double) max31 / range31,
+                    (double) sum32 / count / range32, (double) max32 / range32);
         }
     }
 

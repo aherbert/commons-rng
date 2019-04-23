@@ -19,7 +19,6 @@ package org.apache.commons.rng.examples.jmh;
 
 import org.apache.commons.rng.RestorableUniformRandomProvider;
 import org.apache.commons.rng.UniformRandomProvider;
-import org.apache.commons.rng.core.util.NumberFactory;
 import org.apache.commons.rng.simple.RandomSource;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -38,7 +37,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Executes benchmark to compare the speed of generation of integer numbers in a positive range
- * using the integer primitives as a source of randomness.
+ * using the integer primitives as a source of randomness. The methods tested assume that the
+ * range is known and constant.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -47,6 +47,12 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @Fork(value = 1, jvmArgs = { "-server", "-Xms128M", "-Xmx128M" })
 public class IntegerInRangeGenerationPerformance {
+    /** The loops. */
+    @Param({
+        "100000",
+        })
+    private int loops;
+
     /**
      * The benchmark state (retrieve the various "RandomSource"s).
      */
@@ -102,7 +108,7 @@ public class IntegerInRangeGenerationPerformance {
          * </pre>
          */
         @Param({
-            //"256", // Even: 1 << 8
+            "256", // Even: 1 << 8
             "257", // Prime number
             "1073741825", // Worst case: (1 << 30) + 1
             })
@@ -114,37 +120,6 @@ public class IntegerInRangeGenerationPerformance {
          * @return the upper bound
          */
         public int getUpperBound() {
-            return upperBound;
-        }
-    }
-
-    /**
-     * The upper range for the {@code long} generation.
-     */
-    @State(Scope.Benchmark)
-    public static class LongRange {
-        /**
-         * The upper range for the {@code long} generation.
-         *
-         * <p>Note that the while loop uses a rejection algorithm so set a worst case scenario
-         * (see IntRange).</p>
-         */
-        @Param({
-            "256", // Even: 1 << 8
-            "257", // Prime number
-            "1073741825", // Worst case for int: (1 << 30) + 1
-            "4294967296", // Lowest even that is not an int: 1L << 32
-            "4294967297", // Lowest odd
-            "4503599627370497", // Worst case for long: (1 << 62) + 1
-            })
-        private long upperBound;
-
-        /**
-         * Gets the upper bound.
-         *
-         * @return the upper bound
-         */
-        public long getUpperBound() {
             return upperBound;
         }
     }
@@ -169,9 +144,7 @@ public class IntegerInRangeGenerationPerformance {
             return rng.nextInt() & nm1;
         }
 
-        // Biased modulus method
-        //return (rng.nextInt() >>> 1) % n;
-
+        // Rejection method
         int bits;
         int val;
         do {
@@ -182,260 +155,180 @@ public class IntegerInRangeGenerationPerformance {
     }
 
     /**
-     * Generates an {@code int} value between 0 (inclusive) and the
-     * specified value (exclusive) using a bit source of randomness.
+     * Generates an {@code int} value between 0 (inclusive) and the specified value
+     * (exclusive) using a bit source of randomness.
+     *
+     * <p>This method produces non-uniform samples.</p>
      *
      * @param rng Value to use as a source of randomness.
      * @param n Bound on the random number to be returned. Must be positive.
      * @return a random {@code int} value between 0 (inclusive) and {@code n}
      * (exclusive).
-     * @throws IllegalArgumentException if {@code n} is negative.
      */
-    private static int nextIntFence(UniformRandomProvider rng, int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException();
-        }
-        final int nm1 = n - 1;
-        if ((n & nm1) == 0) {
-            // Range is a power of 2
-            return rng.nextInt() & nm1;
-        }
-
-        // Biased modulus method
-        //return (rng.nextInt() >>> 1) % n;
-
-//        // Fence is a positive number
-//        final int fence = (int)(((1L << 31) / n) * n);
-//        //System.out.printf("%d fence %d%n", n, fence);
-//
-//        int bits;
-//        do {
-//            bits = rng.nextInt() >>> 1;
-//        } while (bits >= fence);
-//
-//        return bits % n;
-
-        int bits = rng.nextInt() >>> 1;
-        int val = bits % n;
-        if (bits - val + nm1 < 0) {
-            // Rejection method
-            final int fence = bits - val;
-            //System.out.printf("%d fence %d %d%n", n, fence, (int)((0x80000000L / n) * n));
-            do {
-                bits = rng.nextInt() >>> 1;
-            } while (bits >= fence);
-            return bits % n;
-        }
-        return val;
+    private static int nextIntModulusBiased(UniformRandomProvider rng, int n) {
+        return (rng.nextInt() >>> 1) % n;
     }
 
     /**
-     * Generates an {@code int} value between 0 (inclusive) and the
-     * specified value (exclusive) using a bit source of randomness.
+     * Generates an {@code int} value between 0 (inclusive) and the specified value
+     * (exclusive) using a bit source of randomness.
+     *
+     * <p>This assumes that the input {@code n} will be in the correct range and the
+     * {@code fence} limit is set to
+     * {@code 0x80000000L - 0x80000000L % n - 1}. This is the
+     * level above which there are not {@code n - 1} more possible values before the
+     * range exceeds {@code 2^31 - 1}. If {@code n} is a power of 2 then the fence
+     * should be set to {@code Integer.MAX_VALUE}.</p>
      *
      * @param rng Value to use as a source of randomness.
      * @param n Bound on the random number to be returned. Must be positive.
+     * @param fence the fence limit on the 31-bit positive integer.
      * @return a random {@code int} value between 0 (inclusive) and {@code n}
      * (exclusive).
-     * @throws IllegalArgumentException if {@code n} is negative.
      */
-    private static int nextIntFence(UniformRandomProvider rng, int n, int fence) {
-        if (n <= 0) {
-            throw new IllegalArgumentException();
-        }
-        final int nm1 = n - 1;
-        if ((n & nm1) == 0) {
-            // Range is a power of 2
-            return rng.nextInt() & nm1;
-        }
-
-        // Rejection method
+    private static int nextIntModulusUnbiased(UniformRandomProvider rng, int n, int fence) {
         int bits;
         do {
             bits = rng.nextInt() >>> 1;
-        } while (bits >= fence);
+        } while (bits > fence);
         return bits % n;
     }
 
+
     /**
      * Generates an {@code int} value between 0 (inclusive) and the
      * specified value (exclusive) using a bit source of randomness.
+     *
+     * <p>This method produces non-uniform samples.</p>
      *
      * @param rng Value to use as a source of randomness.
      * @param n Bound on the random number to be returned. Must be positive.
      * @return a random {@code int} value between 0 (inclusive) and {@code n}
      * (exclusive).
-     * @throws IllegalArgumentException if {@code n} is negative.
      */
-    private static int nextIntMultiplyFence(UniformRandomProvider rng, int n, long fence) {
-        if (n <= 0) {
-            throw new IllegalArgumentException();
-        }
-        final int nm1 = n - 1;
-        if ((n & nm1) == 0) {
-            // Range is a power of 2
-            return rng.nextInt() & nm1;
-        }
-
-        // Rejection method using multiply and remainder
-        long result;
-        do {
-            result = n * (rng.nextInt() & 0xffffffffL);
-        } while ((result & 0xffffffffL) < fence);
-        return (int)(result >>> 32);
+    private static int nextIntMultiplyBiased(UniformRandomProvider rng, int n) {
+        return (int)((n * (rng.nextInt() & 0xffffffffL)) >>> 32);
     }
 
     /**
      * Generates an {@code int} value between 0 (inclusive) and the
      * specified value (exclusive) using a bit source of randomness.
      *
-     * @param rng Value to use as a source of randomness.
-     * @param n Bound on the random number to be returned. Must be positive.
-     * @return a random {@code int} value between 0 (inclusive) and {@code n}
-     * (exclusive).
-     * @throws IllegalArgumentException if {@code n} is negative.
-     */
-    private static int nextIntMultiplyFence2(UniformRandomProvider rng, int n, long fence) {
-        // No checks to test max speed
-        
-        // Rejection method using multiply and remainder
-        long result;
-        do {
-            result = n * (rng.nextInt() & 0xffffffffL);
-        } while ((result & 0xffffffffL) < fence);
-        return (int)(result >>> 32);
-    }
-
-    /**
-     * Generates an {@code long} value between 0 (inclusive) and the
-     * specified value (exclusive) using a bit source of randomness.
+     * <p>This assumes that the input {@code n} will be in the correct range and the
+     * {@code fence} limit is set to {@code 0x100000000L % n}. This is the excess number of
+     * samples that can be extracted from an unsigned 32-bit integer. It is used to
+     * set a lower limit on the remainder of the multiply operation.</p>
      *
      * @param rng Value to use as a source of randomness.
      * @param n Bound on the random number to be returned. Must be positive.
-     * @return a random {@code long} value between 0 (inclusive) and {@code n}
+     * @param fence the fence limit on the 32-bit positive integer remainder.
+     * @return a random {@code int} value between 0 (inclusive) and {@code n}
      * (exclusive).
-     * @throws IllegalArgumentException if {@code n} is negative.
      */
-    private static long nextLong(UniformRandomProvider rng, long n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException();
-        }
-        final long nm1 = n - 1;
-        if ((n & nm1) == 0L) {
-            // Range is a power of 2
-            return rng.nextLong() & nm1;
-        }
+    private static int nextIntMultiplyUnbiased(UniformRandomProvider rng, int n, long fence) {
+        // Rejection method using multiply by a fraction:
+        // n * [0, 2^32 - 1)
+        //     -------------
+        //         2^32
+        // The result is mapped back to an integer and will be in the range [0, n)
+        long result;
+        do {
+            // Compute 64-bit unsigned product of n * [0, 2^32 - 1)
+            result = n * (rng.nextInt() & 0xffffffffL);
 
-        // Biased modulus method
-        return (rng.nextLong() >>> 1) % n;
-
-        //        long bits;
-        //        long val;
-        //        do {
-        //            bits = rng.nextLong() >>> 1;
-        //            val = bits % n;
-        //        } while (bits - val + nm1 < 0);
-        //        return val;
+            // Test the sample uniformity.
+            // The upper 32-bits contains the sample value in the range [0, n), i.e. result / 2^32.
+            // The lower 32-bits contains the remainder (result % 2^32) and provides information
+            // about the uniformity. Since the remainder is periodically spaced at intervals of n
+            // the frequency observed for a sample value is either floor(2^32/n) or ceil(2^32/n).
+            // To ensure all samples have a frequency of floor(2^32/n) reject any index with
+            // a value < 2^32 % n, i.e. the level below which denotes that there are still
+            // floor(2^32/n) more observations of this sample.
+        } while ((result & 0xffffffffL) < fence);
+        return (int)(result >>> 32);
     }
 
     // Benchmark methods
-    
-    @Param({
-        "10000",
-        })
-    private int loops;
 
     /**
+     * @param bh the data sink
      * @param source the source
-     * @return the result
-     */
-    //@Benchmark
-    public int nextIntBaseline(Sources source) {
-        return source.getGenerator().nextInt();
-    }
-
-    /**
-     * @param source the source
-     * @param range the range
      */
     @Benchmark
-    public void nextIntRejectionMethod(Blackhole bh, Sources source, IntRange range) {
+    public void nextIntBaseline(Blackhole bh, Sources source) {
         for (int i = loops; i-- != 0; ) {
-            bh.consume(nextInt(source.getGenerator(), range.getUpperBound()));
+            bh.consume(source.getGenerator().nextInt());
         }
     }
 
     /**
+     * @param bh the data sink
      * @param source the source
      * @param range the range
      */
     @Benchmark
-    public void nextIntFenceMethod(Blackhole bh, Sources source, IntRange range) {
+    public void nextInt(Blackhole bh, Sources source, IntRange range) {
+        final int n = range.getUpperBound();
         for (int i = loops; i-- != 0; ) {
-            bh.consume(nextIntFence(source.getGenerator(), range.getUpperBound()));
-        }
-    }
-
-    @Benchmark
-    public void nextIntPreFenceMethod(Blackhole bh, Sources source, IntRange range) {
-        int fence = Integer.MAX_VALUE - Integer.MAX_VALUE % range.getUpperBound();
-        for (int i = loops; i-- != 0; ) {
-            bh.consume(nextIntFence(source.getGenerator(), range.getUpperBound(), fence));
-        }
-    }
-
-    @Benchmark
-    public void nextIntMultiplyPreFenceMethod(Blackhole bh, Sources source, IntRange range) {
-        long fence = (1L << 32) % range.getUpperBound();
-        for (int i = loops; i-- != 0; ) {
-            bh.consume(nextIntMultiplyFence(source.getGenerator(), range.getUpperBound(), fence));
-        }
-    }
-
-    @Benchmark
-    public void nextIntMultiplyPreFenceMethod2(Blackhole bh, Sources source, IntRange range) {
-        long fence = (1L << 32) % range.getUpperBound();
-        for (int i = loops; i-- != 0; ) {
-            bh.consume(nextIntMultiplyFence2(source.getGenerator(), range.getUpperBound(), fence));
+            bh.consume(nextInt(source.getGenerator(), n));
         }
     }
 
     /**
+     * @param bh the data sink
      * @param source the source
      * @param range the range
-     * @return the result
      */
-    //@Benchmark
-    public long nextIntNumberFactory(Sources source, IntRange range) {
-        return NumberFactory.makeIntInRange(source.getGenerator().nextInt(), range.getUpperBound());
+    @Benchmark
+    public void nextIntModulusBiased(Blackhole bh, Sources source, IntRange range) {
+        final int n = range.getUpperBound();
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntModulusBiased(source.getGenerator(), n));
+        }
     }
 
     /**
-     * @param source the source
-     * @return the result
-     */
-    //@Benchmark
-    public long nextLongBaseline(Sources source) {
-        return source.getGenerator().nextLong();
-    }
-
-    /**
+     * @param bh the data sink
      * @param source the source
      * @param range the range
-     * @return the result
      */
-    //@Benchmark
-    public long nextLongRejectionMethod(Sources source, LongRange range) {
-        return nextLong(source.getGenerator(), range.getUpperBound());
+    @Benchmark
+    public void nextIntModulusUnbiased(Blackhole bh, Sources source, IntRange range) {
+        final int n = range.getUpperBound();
+        // This method works where n is a power of 2 (the result is Integer.MAX_VALUE)
+        final int fence = (int)(0x80000000L - 0x80000000L % n - 1);
+        // These compute equivalent levels but do not work where n is a power of 2:
+        // Integer.MAX_VALUE - Integer.MAX_VALUE % n - 1
+        // (Integer.MAX_VALUE / n) * n - 1
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntModulusUnbiased(source.getGenerator(), n, fence));
+        }
     }
 
     /**
+     * @param bh the data sink
      * @param source the source
      * @param range the range
-     * @return the result
      */
-    //@Benchmark
-    public long nextLongNumberFactory(Sources source, LongRange range) {
-        return NumberFactory.makeLongInRange(source.getGenerator().nextLong(), range.getUpperBound());
+    @Benchmark
+    public void nextIntMultiplyBiased(Blackhole bh, Sources source, IntRange range) {
+        final int n = range.getUpperBound();
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntMultiplyBiased(source.getGenerator(), n));
+        }
+    }
+
+    /**
+     * @param bh the data sink
+     * @param source the source
+     * @param range the range
+     */
+    @Benchmark
+    public void nextIntMultiplyUnbiased(Blackhole bh, Sources source, IntRange range) {
+        final int n = range.getUpperBound();
+        final long fence = (1L << 32) % n;
+        for (int i = loops; i-- != 0; ) {
+            bh.consume(nextIntMultiplyUnbiased(source.getGenerator(), n, fence));
+        }
     }
 }
