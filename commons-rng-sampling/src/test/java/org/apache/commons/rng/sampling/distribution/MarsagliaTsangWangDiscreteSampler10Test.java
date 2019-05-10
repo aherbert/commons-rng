@@ -25,10 +25,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Test for the {@link MarsagliaTsangWangDiscreteSampler}. The tests hit edge cases for
+ * Test for the {@link MarsagliaTsangWangDiscreteSampler10}. The tests hit edge cases for
  * the sampler.
  */
-public class MarsagliaTsangWangDiscreteSamplerTest {
+public class MarsagliaTsangWangDiscreteSampler10Test {
     // Tests for the package-private constructor using int[] + offset
 
     /**
@@ -69,9 +69,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      * @param offset the offset
      * @return the sampler
      */
-    private static MarsagliaTsangWangDiscreteSampler createSampler(final int[] probabilities, int offset) {
+    private static MarsagliaTsangWangDiscreteSampler10 createSampler(final int[] probabilities, int offset) {
         final UniformRandomProvider rng = new SplitMix64(0L);
-        return new MarsagliaTsangWangDiscreteSampler(rng, probabilities, offset);
+        return new MarsagliaTsangWangDiscreteSampler10(rng, probabilities, offset);
     }
 
     // Tests for the public constructor using double[]
@@ -117,9 +117,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      * @param probabilities the probabilities
      * @return the sampler
      */
-    private static MarsagliaTsangWangDiscreteSampler createSampler(double[] probabilities) {
+    private static MarsagliaTsangWangDiscreteSampler10 createSampler(double[] probabilities) {
         final UniformRandomProvider rng = new SplitMix64(0L);
-        return new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
+        return new MarsagliaTsangWangDiscreteSampler10(rng, probabilities);
     }
 
     // Sampling tests
@@ -174,9 +174,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
         final int offset2 = 1 << 8;
         final int offset3 = 1 << 16;
 
-        final MarsagliaTsangWangDiscreteSampler sampler1 = new MarsagliaTsangWangDiscreteSampler(rng1, prob, offset1);
-        final MarsagliaTsangWangDiscreteSampler sampler2 = new MarsagliaTsangWangDiscreteSampler(rng2, prob, offset2);
-        final MarsagliaTsangWangDiscreteSampler sampler3 = new MarsagliaTsangWangDiscreteSampler(rng3, prob, offset3);
+        final MarsagliaTsangWangDiscreteSampler10 sampler1 = new MarsagliaTsangWangDiscreteSampler10(rng1, prob, offset1);
+        final MarsagliaTsangWangDiscreteSampler10 sampler2 = new MarsagliaTsangWangDiscreteSampler10(rng2, prob, offset2);
+        final MarsagliaTsangWangDiscreteSampler10 sampler3 = new MarsagliaTsangWangDiscreteSampler10(rng3, prob, offset3);
 
         for (int i = 0; i < values.length; i++) {
             // Remove offsets
@@ -202,12 +202,12 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
 
         // First test the table is completely filled to 2^30
         final UniformRandomProvider dummyRng = new FixedSequenceIntProvider(new int[] { 0xffffffff});
-        final MarsagliaTsangWangDiscreteSampler dummySampler = new MarsagliaTsangWangDiscreteSampler(dummyRng, probabilities);
+        final MarsagliaTsangWangDiscreteSampler10 dummySampler = new MarsagliaTsangWangDiscreteSampler10(dummyRng, probabilities);
         // This will throw if the table is incomplete as it hits the upper limit
         dummySampler.sample();
 
         // Do a test of the actual sampler
-        final MarsagliaTsangWangDiscreteSampler sampler = new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
+        final MarsagliaTsangWangDiscreteSampler10 sampler = new MarsagliaTsangWangDiscreteSampler10(rng, probabilities);
 
         final int numberOfSamples = 10000;
         final long[] samples = new long[probabilities.length];
@@ -308,7 +308,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
     /**
      * Return a fixed sequence of {@code int} output.
      */
-    private static class FixedSequenceIntProvider extends IntProvider {
+    private class FixedSequenceIntProvider extends IntProvider {
         /** The count of values output. */
         private int count;
         /** The values. */

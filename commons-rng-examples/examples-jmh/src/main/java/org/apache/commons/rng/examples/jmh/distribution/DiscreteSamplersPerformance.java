@@ -24,8 +24,15 @@ import org.apache.commons.rng.sampling.distribution.DiscreteUniformSampler;
 import org.apache.commons.rng.sampling.distribution.GeometricSampler;
 import org.apache.commons.rng.sampling.distribution.LargeMeanPoissonSampler;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangBinomialSampler;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangBinomialSampler2;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler10;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler102;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler2;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerNew;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerNew.BaseOption;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangSmallMeanPoissonSampler;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangSmallMeanPoissonSampler2;
 import org.apache.commons.rng.sampling.distribution.RejectionInversionZipfSampler;
 import org.apache.commons.rng.sampling.distribution.SmallMeanPoissonSampler;
 import org.apache.commons.rng.simple.RandomSource;
@@ -64,14 +71,20 @@ public class DiscreteSamplersPerformance {
         /**
          * The sampler type.
          */
-        @Param({"DiscreteUniformSampler",
-                "RejectionInversionZipfSampler",
-                "SmallMeanPoissonSampler",
-                "LargeMeanPoissonSampler",
-                "GeometricSampler",
+        @Param({//"DiscreteUniformSampler",
+                //"RejectionInversionZipfSampler",
+                //"SmallMeanPoissonSampler",
+                //"LargeMeanPoissonSampler",
+                //"GeometricSampler",
                 "MarsagliaTsangWangDiscreteSampler",
-                "MarsagliaTsangWangSmallMeanPoissonSampler",
-                "MarsagliaTsangWangBinomialSampler",
+                "MarsagliaTsangWangDiscreteSampler2",
+                "MarsagliaTsangWangDiscreteSampler10",
+                "MarsagliaTsangWangDiscreteSamplerBase64",
+                "MarsagliaTsangWangDiscreteSamplerBase1024",
+                //"MarsagliaTsangWangSmallMeanPoissonSampler",
+                //"MarsagliaTsangWangSmallMeanPoissonSampler2",
+                //"MarsagliaTsangWangBinomialSampler",
+                //"MarsagliaTsangWangBinomialSampler2",
                 })
         private String samplerType;
 
@@ -104,10 +117,24 @@ public class DiscreteSamplersPerformance {
                 sampler = new GeometricSampler(rng, 0.21);
             } else if ("MarsagliaTsangWangDiscreteSampler".equals(samplerType)) {
                 sampler = new MarsagliaTsangWangDiscreteSampler(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+            } else if ("MarsagliaTsangWangDiscreteSampler2".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSampler2(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+            } else if ("MarsagliaTsangWangDiscreteSampler10".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSampler10(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+            } else if ("MarsagliaTsangWangDiscreteSamplerBase64".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSamplerNew(rng, new double[] {0.1, 0.2, 0.3, 0.4}, BaseOption.BASE_64);
+            } else if ("MarsagliaTsangWangDiscreteSamplerBase1024".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSamplerNew(rng, new double[] {0.1, 0.2, 0.3, 0.4}, BaseOption.BASE_1024);
+            } else if ("MarsagliaTsangWangDiscreteSampler102".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSampler102(rng, new double[] {0.1, 0.2, 0.3, 0.4});
             } else if ("MarsagliaTsangWangSmallMeanPoissonSampler".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangSmallMeanPoissonSampler(rng, 8.9);
+                sampler = new MarsagliaTsangWangSmallMeanPoissonSampler(rng, 22.9);
+            } else if ("MarsagliaTsangWangSmallMeanPoissonSampler2".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangSmallMeanPoissonSampler2(rng, 22.9);
             } else if ("MarsagliaTsangWangBinomialSampler".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangBinomialSampler(rng, 20, 0.33);
+                sampler = new MarsagliaTsangWangBinomialSampler(rng, 67, 0.33);
+            } else if ("MarsagliaTsangWangBinomialSampler2".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangBinomialSampler2(rng, 67, 0.33);
             }
         }
     }
@@ -129,6 +156,17 @@ public class DiscreteSamplersPerformance {
     @Benchmark
     public int baseline() {
         return value;
+    }
+
+    /**
+     * Run the sampler.
+     *
+     * @param sources Source of randomness.
+     * @return the sample value
+     */
+    @Benchmark
+    public int nextInt(RandomSources sources) {
+        return sources.getGenerator().nextInt();
     }
 
     /**

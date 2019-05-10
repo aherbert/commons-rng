@@ -20,15 +20,16 @@ import org.apache.commons.math3.stat.inference.ChiSquareTest;
 import org.apache.commons.rng.UniformRandomProvider;
 import org.apache.commons.rng.core.source32.IntProvider;
 import org.apache.commons.rng.core.source64.SplitMix64;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerNew.BaseOption;
 import org.apache.commons.rng.simple.RandomSource;
 import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Test for the {@link MarsagliaTsangWangDiscreteSampler}. The tests hit edge cases for
+ * Test for the {@link MarsagliaTsangWangDiscreteSamplerNew}. The tests hit edge cases for
  * the sampler.
  */
-public class MarsagliaTsangWangDiscreteSamplerTest {
+public class MarsagliaTsangWangDiscreteSamplerNewTest {
     // Tests for the package-private constructor using int[] + offset
 
     /**
@@ -69,9 +70,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      * @param offset the offset
      * @return the sampler
      */
-    private static MarsagliaTsangWangDiscreteSampler createSampler(final int[] probabilities, int offset) {
+    private static MarsagliaTsangWangDiscreteSamplerNew createSampler(final int[] probabilities, int offset) {
         final UniformRandomProvider rng = new SplitMix64(0L);
-        return new MarsagliaTsangWangDiscreteSampler(rng, probabilities, offset);
+        return new MarsagliaTsangWangDiscreteSamplerNew(rng, probabilities, offset, BaseOption.BASE_64);
     }
 
     // Tests for the public constructor using double[]
@@ -117,9 +118,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      * @param probabilities the probabilities
      * @return the sampler
      */
-    private static MarsagliaTsangWangDiscreteSampler createSampler(double[] probabilities) {
+    private static MarsagliaTsangWangDiscreteSamplerNew createSampler(double[] probabilities) {
         final UniformRandomProvider rng = new SplitMix64(0L);
-        return new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
+        return new MarsagliaTsangWangDiscreteSamplerNew(rng, probabilities, BaseOption.BASE_64);
     }
 
     // Sampling tests
@@ -129,7 +130,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      * storage using different offsets to control the maximum sample value.
      */
     @Test
-    public void testOffsetSamples() {
+    public void testOffsetSamplesWithBase64() {
         // This is filled with probabilities to hit all edge cases in the fill procedure.
         // The probabilities must have a digit from each of the 5 possible.
         final int[] prob = new int[6];
@@ -174,9 +175,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
         final int offset2 = 1 << 8;
         final int offset3 = 1 << 16;
 
-        final MarsagliaTsangWangDiscreteSampler sampler1 = new MarsagliaTsangWangDiscreteSampler(rng1, prob, offset1);
-        final MarsagliaTsangWangDiscreteSampler sampler2 = new MarsagliaTsangWangDiscreteSampler(rng2, prob, offset2);
-        final MarsagliaTsangWangDiscreteSampler sampler3 = new MarsagliaTsangWangDiscreteSampler(rng3, prob, offset3);
+        final MarsagliaTsangWangDiscreteSamplerNew sampler1 = new MarsagliaTsangWangDiscreteSamplerNew(rng1, prob, offset1, BaseOption.BASE_64);
+        final MarsagliaTsangWangDiscreteSamplerNew sampler2 = new MarsagliaTsangWangDiscreteSamplerNew(rng2, prob, offset2, BaseOption.BASE_64);
+        final MarsagliaTsangWangDiscreteSamplerNew sampler3 = new MarsagliaTsangWangDiscreteSamplerNew(rng3, prob, offset3, BaseOption.BASE_64);
 
         for (int i = 0; i < values.length; i++) {
             // Remove offsets
@@ -189,10 +190,83 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
     }
 
     /**
-     * Test samples from a distribution expressed using {@code double} probabilities.
+     * Test offset samples. This test hits all code paths in the sampler for 8, 16, and 32-bit
+     * storage using different offsets to control the maximum sample value.
      */
     @Test
-    public void testRealProbabilityDistributionSamples() {
+    public void testOffsetSamplesWithBase1024() {
+        // This is filled with probabilities to hit all edge cases in the fill procedure.
+        // The probabilities must have a digit from each of the 3 possible.
+        final int[] prob = new int[4];
+        prob[0] = 1;
+        prob[1] = 1 + 1 << 10;
+        prob[2] = 1 + 1 << 20;
+        // Ensure probabilities sum to 2^30
+        prob[3] = (1 << 30) - (prob[0] + prob[1] + prob[2]);
+
+        // To hit all samples requires integers that are under the look-up table limits.
+        // So compute the limits here.
+        int n1 = 0;
+        int n2 = 0;
+        for (final int m : prob) {
+            n1 += getBase1024Digit(m, 1);
+            n2 += getBase1024Digit(m, 2);
+        }
+
+        final int t1 = n1 << 24;
+        final int t2 = t1 + (n2 << 18);
+
+        // Create values under the limits and bit shift by 2 to reverse what the sampler does.
+        final int[] values = new int[] { 0, t1, t2, 0xffffffff };
+        for (int i = 0; i < values.length; i++) {
+            values[i] <<= 2;
+        }
+
+        final UniformRandomProvider rng1 = new FixedSequenceIntProvider(values);
+        final UniformRandomProvider rng2 = new FixedSequenceIntProvider(values);
+        final UniformRandomProvider rng3 = new FixedSequenceIntProvider(values);
+
+        // Create offsets to force storage as 8, 16, or 32-bit
+        final int offset1 = 1;
+        final int offset2 = 1 << 8;
+        final int offset3 = 1 << 16;
+
+        final MarsagliaTsangWangDiscreteSamplerNew sampler1 = new MarsagliaTsangWangDiscreteSamplerNew(rng1, prob, offset1, BaseOption.BASE_1024);
+        final MarsagliaTsangWangDiscreteSamplerNew sampler2 = new MarsagliaTsangWangDiscreteSamplerNew(rng2, prob, offset2, BaseOption.BASE_1024);
+        final MarsagliaTsangWangDiscreteSamplerNew sampler3 = new MarsagliaTsangWangDiscreteSamplerNew(rng3, prob, offset3, BaseOption.BASE_1024);
+
+        for (int i = 0; i < values.length; i++) {
+            // Remove offsets
+            final int s1 = sampler1.sample() - offset1;
+            final int s2 = sampler2.sample() - offset2;
+            final int s3 = sampler3.sample() - offset3;
+            Assert.assertEquals("Offset sample 1 and 2 do not match", s1, s2);
+            Assert.assertEquals("Offset Sample 1 and 3 do not match", s1, s3);
+        }
+    }
+
+    /**
+     * Test samples from a distribution expressed using {@code double} probabilities
+     * using tables created with base 1024.
+     */
+    @Test
+    public void testRealProbabilityDistributionSamplesWithBase64() {
+        testRealProbabilityDistributionSamples(BaseOption.BASE_64);
+    }
+
+    /**
+     * Test samples from a distribution expressed using {@code double} probabilities
+     * using tables created with base 1024.
+     */
+    @Test
+    public void testRealProbabilityDistributionSamplesWithBase1024() {
+        testRealProbabilityDistributionSamples(BaseOption.BASE_1024);
+    }
+
+    /**
+     * Test samples from a distribution expressed using {@code double} probabilities.
+     */
+    private static void testRealProbabilityDistributionSamples(BaseOption baseOption) {
         // These do not have to sum to 1
         final double[] probabilities = new double[11];
         final UniformRandomProvider rng = RandomSource.create(RandomSource.SPLIT_MIX_64);
@@ -202,12 +276,13 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
 
         // First test the table is completely filled to 2^30
         final UniformRandomProvider dummyRng = new FixedSequenceIntProvider(new int[] { 0xffffffff});
-        final MarsagliaTsangWangDiscreteSampler dummySampler = new MarsagliaTsangWangDiscreteSampler(dummyRng, probabilities);
+        final MarsagliaTsangWangDiscreteSamplerNew dummySampler = new MarsagliaTsangWangDiscreteSamplerNew(dummyRng,
+            probabilities, baseOption);
         // This will throw if the table is incomplete as it hits the upper limit
         dummySampler.sample();
 
         // Do a test of the actual sampler
-        final MarsagliaTsangWangDiscreteSampler sampler = new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
+        final MarsagliaTsangWangDiscreteSamplerNew sampler = new MarsagliaTsangWangDiscreteSamplerNew(rng, probabilities, baseOption);
 
         final int numberOfSamples = 10000;
         final long[] samples = new long[probabilities.length];
@@ -303,6 +378,17 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      */
     private static int getBase64Digit(int m, int k) {
         return (m >>> (30 - 6 * k)) & 63;
+    }
+
+    /**
+     * Gets the k<sup>th</sup> base 1024 digit of {@code m}.
+     *
+     * @param m the value m.
+     * @param k the digit.
+     * @return the base 1024 digit
+     */
+    private static int getBase1024Digit(int m, int k) {
+        return (m >>> (30 - 10 * k)) & 1023;
     }
 
     /**
