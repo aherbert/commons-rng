@@ -41,11 +41,9 @@ import org.apache.commons.rng.UniformRandomProvider;
  * @see <a href="http://dx.doi.org/10.18637/jss.v011.i03">Margsglia, et al (2004) JSS Vol.
  * 11, Issue 3</a>
  */
-public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
-    /** The exclusive upper bound for an unsigned 8-bit integer. */
-    private static final int UNSIGNED_INT_8 = 1 << 8;
-    /** The exclusive upper bound for an unsigned 16-bit integer. */
-    private static final int UNSIGNED_INT_16 = 1 << 16;
+public class MarsagliaTsangWangDiscreteSamplerByte implements DiscreteSampler {
+    /** The mask to convert a {@code byte} to an unsigned 8-bit integer. */
+    private static final int MASK = 0xff;
 
     /** Limit for look-up table 1. */
     private final int t1;
@@ -56,176 +54,19 @@ public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
     /** Limit for look-up table 4. */
     private final int t4;
 
-    /** Index look-up table. */
-    private final IndexTable indexTable;
+    /** Look-up table table1. */
+    private final byte[] table1;
+    /** Look-up table table2. */
+    private final byte[] table2;
+    /** Look-up table table3. */
+    private final byte[] table3;
+    /** Look-up table table4. */
+    private final byte[] table4;
+    /** Look-up table table5. */
+    private final byte[] table5;
 
     /** Underlying source of randomness. */
     private final UniformRandomProvider rng;
-
-    /**
-     * An index table contains the sample values. This is efficiently accessed for any index in the
-     * range {@code [0,2^30)} by using an algorithm based on the decomposition of the index into
-     * 5 base-64 digits.
-     *
-     * <p>This interface defines the methods for the filling and accessing values from 5 tables.
-     * It allows a concrete implementation to allocate appropriate tables to optimise memory
-     * requirements.</p>
-     */
-    private interface IndexTable {
-        /**
-         * @param table Index of the table to use.
-         * @param from Lower bound index (inclusive).
-         * @param to Upper bound index (exclusive).
-         * @param value Value.
-         */
-        void fill(int table, int from, int to, int value);
-
-        /**
-         * @param table Index of the table to use.
-         * @param index Index.
-         * @return Value.
-         */
-        int get(int table, int index);
-    }
-
-    /**
-     * Index table for an 8-bit index.
-     */
-    private static class IndexTable8 implements IndexTable {
-        /** The mask to convert a {@code byte} to an unsigned 8-bit integer. */
-        private static final int MASK = 0xff;
-
-        /** Look-up tables. */
-        private final byte[][] tables;
-
-        /**
-         * @param n1 Size of table 1.
-         * @param n2 Size of table 2.
-         * @param n3 Size of table 3.
-         * @param n4 Size of table 4.
-         * @param n5 Size of table 5.
-         */
-        IndexTable8(int n1, int n2, int n3, int n4, int n5) {
-            tables = new byte[][] { new byte[n1],
-                                    new byte[n2],
-                                    new byte[n3],
-                                    new byte[n4],
-                                    new byte[n5] };
-        }
-
-        @Override
-        public void fill(int table, int from, int to, int value) { fill(tables[table], from, to, value); }
-
-        /**
-         * Fill the table with the value.
-         *
-         * @param table Table.
-         * @param from Lower bound index (inclusive)
-         * @param to Upper bound index (exclusive)
-         * @param value Value.
-         */
-        private static void fill(byte[] table, int from, int to, int value) {
-            while (from < to) {
-                // Primitive type conversion will extract lower 8 bits
-                table[from++] = (byte) value;
-            }
-        }
-
-        @Override
-        public int get(int table, int index) { return tables[table][index] & MASK; }
-    }
-
-    /**
-     * Index table for a 16-bit index.
-     */
-    private static class IndexTable16 implements IndexTable {
-        /** The mask to convert a {@code short} to an unsigned 16-bit integer. */
-        private static final int MASK = 0xffff;
-
-        /** Look-up tables. */
-        private final short[][] tables;
-
-        /**
-         * @param n1 Size of table 1.
-         * @param n2 Size of table 2.
-         * @param n3 Size of table 3.
-         * @param n4 Size of table 4.
-         * @param n5 Size of table 5.
-         */
-        IndexTable16(int n1, int n2, int n3, int n4, int n5) {
-            tables = new short[][] { new short[n1],
-                                     new short[n2],
-                                     new short[n3],
-                                     new short[n4],
-                                     new short[n5] };
-        }
-
-        @Override
-        public void fill(int table, int from, int to, int value) { fill(tables[table], from, to, value); }
-
-        /**
-         * Fill the table with the value.
-         *
-         * @param table Table.
-         * @param from Lower bound index (inclusive)
-         * @param to Upper bound index (exclusive)
-         * @param value Value.
-         */
-        private static void fill(short[] table, int from, int to, int value) {
-            while (from < to) {
-                // Primitive type conversion will extract lower 8 bits
-                table[from++] = (short) value;
-            }
-        }
-
-        @Override
-        public int get(int table, int index) { return tables[table][index] & MASK; }
-
-    }
-
-    /**
-     * Index table for a 32-bit index.
-     */
-    private static class IndexTable32 implements IndexTable {
-        /** Look-up tables. */
-        private final int[][] tables;
-
-        /**
-         * @param n1 Size of table 1.
-         * @param n2 Size of table 2.
-         * @param n3 Size of table 3.
-         * @param n4 Size of table 4.
-         * @param n5 Size of table 5.
-         */
-        IndexTable32(int n1, int n2, int n3, int n4, int n5) {
-            tables = new int[][] { new int[n1],
-                                   new int[n2],
-                                   new int[n3],
-                                   new int[n4],
-                                   new int[n5] };
-        }
-
-        @Override
-        public void fill(int table, int from, int to, int value) { fill(tables[table], from, to, value); }
-
-        /**
-         * Fill the table with the value.
-         *
-         * @param table Table.
-         * @param from Lower bound index (inclusive)
-         * @param to Upper bound index (exclusive)
-         * @param value Value.
-         */
-        private static void fill(int[] table, int from, int to, int value) {
-            while (from < to) {
-                table[from++] = value;
-            }
-        }
-
-        @Override
-        public int get(int table, int index) { return tables[table][index]; }
-
-    }
 
     /**
      * Create a new instance for probabilities {@code p(i)} where the sample value {@code x} is
@@ -243,7 +84,7 @@ public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
      * @throws IllegalArgumentException if the offset is negative or the maximum sample index
      * exceeds the maximum positive {@code int} value (2<sup>31</sup> - 1).
      */
-    MarsagliaTsangWangDiscreteSampler2(UniformRandomProvider rng,
+    MarsagliaTsangWangDiscreteSamplerByte(UniformRandomProvider rng,
                                       int[] prob,
                                       int offset) {
         if (offset < 0) {
@@ -269,15 +110,11 @@ public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
             n5 += getBase64Digit(m, 5);
         }
 
-        // Allocate tables based on the maximum index
-        final int maxIndex = prob.length + offset - 1;
-        if (maxIndex < UNSIGNED_INT_8) {
-            indexTable = new IndexTable8(n1, n2, n3, n4, n5);
-        } else if (maxIndex < UNSIGNED_INT_16) {
-            indexTable = new IndexTable16(n1, n2, n3, n4, n5);
-        } else {
-            indexTable = new IndexTable32(n1, n2, n3, n4, n5);
-        }
+        table1 = new byte[n1];
+        table2 = new byte[n2];
+        table3 = new byte[n3];
+        table4 = new byte[n4];
+        table5 = new byte[n5];
 
         // Compute offsets
         t1 = n1 << 24;
@@ -289,12 +126,12 @@ public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
         // Fill tables
         for (int i = 0; i < prob.length; i++) {
             final int m = prob[i];
-            final int k = i + offset;
-            indexTable.fill(0, n1, n1 += getBase64Digit(m, 1), k);
-            indexTable.fill(1, n2, n2 += getBase64Digit(m, 2), k);
-            indexTable.fill(2, n3, n3 += getBase64Digit(m, 3), k);
-            indexTable.fill(3, n4, n4 += getBase64Digit(m, 4), k);
-            indexTable.fill(4, n5, n5 += getBase64Digit(m, 5), k);
+            final byte k = (byte)(i + offset);
+            fill(table1, n1, n1 += getBase64Digit(m, 1), k);
+            fill(table2, n2, n2 += getBase64Digit(m, 2), k);
+            fill(table3, n3, n3 += getBase64Digit(m, 3), k);
+            fill(table4, n4, n4 += getBase64Digit(m, 4), k);
+            fill(table5, n5, n5 += getBase64Digit(m, 5), k);
         }
     }
 
@@ -314,7 +151,7 @@ public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
      * probability is negative, infinite or {@code NaN}, or the sum of all
      * probabilities is not strictly positive.
      */
-    public MarsagliaTsangWangDiscreteSampler2(UniformRandomProvider rng,
+    public MarsagliaTsangWangDiscreteSamplerByte(UniformRandomProvider rng,
                                              double[] probabilities) {
         this(rng, normaliseProbabilities(probabilities), 0);
     }
@@ -398,26 +235,41 @@ public class MarsagliaTsangWangDiscreteSampler2 implements DiscreteSampler {
         return (m >>> (30 - 6 * k)) & 63;
     }
 
+    /**
+     * Fill the table with the value.
+     *
+     * @param table Table.
+     * @param from Lower bound index (inclusive)
+     * @param to Upper bound index (exclusive)
+     * @param value Value.
+     */
+    private static void fill(byte[] table, int from, int to, byte value) {
+        while (from < to) {
+            // Primitive type conversion will extract lower 16 bits
+            table[from++] = value;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public int sample() {
         final int j = rng.nextInt() >>> 2;
         if (j < t1) {
-            return indexTable.get(0, j >>> 24);
+            return table1[j >>> 24] & MASK;
         }
         if (j < t2) {
-            return indexTable.get(1, (j - t1) >>> 18);
+            return table2[(j - t1) >>> 18] & MASK;
         }
         if (j < t3) {
-            return indexTable.get(2, (j - t2) >>> 12);
+            return table3[(j - t2) >>> 12] & MASK;
         }
         if (j < t4) {
-            return indexTable.get(3, (j - t3) >>> 6);
+            return table4[(j - t3) >>> 6] & MASK;
         }
         // Note the tables are filled on the assumption that the sum of the probabilities.
         // is >=2^30. If this is not true then the final table table5 will be smaller by the
         // difference. So the tables *must* be constructed correctly.
-        return indexTable.get(4, j - t4);
+        return table5[j - t4] & MASK;
     }
 
     /** {@inheritDoc} */

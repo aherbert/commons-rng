@@ -41,27 +41,22 @@ import org.apache.commons.rng.UniformRandomProvider;
  * @see <a href="http://dx.doi.org/10.18637/jss.v011.i03">Margsglia, et al (2004) JSS Vol.
  * 11, Issue 3</a>
  */
-public class MarsagliaTsangWangDiscreteSamplerNew implements DiscreteSampler {
+public class MarsagliaTsangWangDiscreteSamplerBase10 implements DiscreteSampler {
     /** The exclusive upper bound for an unsigned 8-bit integer. */
     private static final int UNSIGNED_INT_8 = 1 << 8;
     /** The exclusive upper bound for an unsigned 16-bit integer. */
     private static final int UNSIGNED_INT_16 = 1 << 16;
 
-    /** The delegate. */
-    private final DiscreteSampler delegate;
+    /** Limit for look-up table 1. */
+    private final int t1;
+    /** Limit for look-up table 2. */
+    private final int t2;
 
-    /**
-     * The option for the base of the digit used when creating the look-up table.
-     *
-     * <p>Increasing the size of the base increases performance at the expense of storage
-     * requirements.</p>
-     */
-    public enum BaseOption {
-        /** Tabulate using base 64 (2<sup>6</sup>) to create 5 tables. */
-        BASE_64,
-        /** Tabulate using base 1024 (2<sup>10</sup>) to create 3 tables. */
-        BASE_1024
-    }
+    /** Index look-up table. */
+    private final IndexTable indexTable;
+
+    /** Underlying source of randomness. */
+    private final UniformRandomProvider rng;
 
     /**
      * An index table contains the sample values. This is efficiently accessed for any index in the
@@ -341,246 +336,11 @@ public class MarsagliaTsangWangDiscreteSamplerNew implements DiscreteSampler {
     }
 
     /**
-     * Base class for a sampler.
-     */
-    private abstract static class AbstractSampler implements DiscreteSampler {
-        /** Underlying source of randomness. */
-        protected final UniformRandomProvider rng;
-
-        /**
-         * @param rng Generator of uniformly distributed random numbers.
-         */
-        protected AbstractSampler(UniformRandomProvider rng) {
-            this.rng = rng;
-        }
-
-        /**
-         * Creates the index table.
-         *
-         * @param maxIndex Maximum index.
-         * @param n1 Size of table 1.
-         * @param n2 Size of table 2.
-         * @param n3 Size of table 3.
-         * @param n4 Size of table 4.
-         * @param n5 Size of table 5.
-         * @return the index table
-         */
-        protected static IndexTable createIndexTable(int maxIndex,
-                                                     int n1, int n2, int n3, int n4, int n5) {
-            if (maxIndex < UNSIGNED_INT_8) {
-                return new IndexTable8(n1, n2, n3, n4, n5);
-            }
-            if (maxIndex < UNSIGNED_INT_16) {
-                return new IndexTable16(n1, n2, n3, n4, n5);
-            }
-            return new IndexTable32(n1, n2, n3, n4, n5);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString() {
-            return "Marsaglia Tsang Wang discrete deviate [" + rng.toString() + "]";
-        }
-    }
-
-    /**
-     * The sampler using base 64 (2^6) and 5 look-up tables to tabulate 2^30 numbers.
-     */
-    private static class Base64Sampler implements DiscreteSampler {
-        /** Limit for look-up table 1. */
-        private final int t1;
-        /** Limit for look-up table 2. */
-        private final int t2;
-        /** Limit for look-up table 3. */
-        private final int t3;
-        /** Limit for look-up table 4. */
-        private final int t4;
-
-        /** Underlying source of randomness. */
-        private final UniformRandomProvider rng;
-
-        /** Index look-up table. */
-        private final IndexTable indexTable;
-
-        /**
-         * @param rng Generator of uniformly distributed random numbers.
-         * @param prob The probabilities.
-         * @param offset The offset (must be positive).
-         */
-        Base64Sampler(UniformRandomProvider rng,
-                      int[] prob,
-                      int offset) {
-            this.rng = rng;
-
-            // Get table sizes for each base-64 digit
-            int n1 = 0;
-            int n2 = 0;
-            int n3 = 0;
-            int n4 = 0;
-            int n5 = 0;
-            for (final int m : prob) {
-                n1 += getBase64Digit(m, 1);
-                n2 += getBase64Digit(m, 2);
-                n3 += getBase64Digit(m, 3);
-                n4 += getBase64Digit(m, 4);
-                n5 += getBase64Digit(m, 5);
-            }
-
-            // Allocate tables based on the maximum index
-            indexTable = createIndexTable(prob.length + offset - 1, n1, n2, n3, n4, n5);
-
-            // Compute offsets
-            t1 = n1 << 24;
-            t2 = t1 + (n2 << 18);
-            t3 = t2 + (n3 << 12);
-            t4 = t3 + (n4 << 6);
-            n1 = n2 = n3 = n4 = n5 = 0;
-
-            // Fill tables
-            for (int i = 0; i < prob.length; i++) {
-                final int m = prob[i];
-                final int k = i + offset;
-                indexTable.fillTable1(n1, n1 += getBase64Digit(m, 1), k);
-                indexTable.fillTable2(n2, n2 += getBase64Digit(m, 2), k);
-                indexTable.fillTable3(n3, n3 += getBase64Digit(m, 3), k);
-                indexTable.fillTable4(n4, n4 += getBase64Digit(m, 4), k);
-                indexTable.fillTable5(n5, n5 += getBase64Digit(m, 5), k);
-            }
-        }
-
-        /**
-         * Gets the k<sup>th</sup> base 64 digit of {@code m}.
-         *
-         * @param m the value m.
-         * @param k the digit.
-         * @return the base 64 digit
-         */
-        private static int getBase64Digit(int m, int k) {
-            return (m >>> (30 - 6 * k)) & 63;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public int sample() {
-            final int j = rng.nextInt() >>> 2;
-            if (j < t1) {
-                return indexTable.getTable1(j >>> 24);
-            }
-            if (j < t2) {
-                return indexTable.getTable2((j - t1) >>> 18);
-            }
-            if (j < t3) {
-                return indexTable.getTable3((j - t2) >>> 12);
-            }
-            if (j < t4) {
-                return indexTable.getTable4((j - t3) >>> 6);
-            }
-            // Note the tables are filled on the assumption that the sum of the probabilities.
-            // is >=2^30. If this is not true then the final table will be smaller by the
-            // difference. So the tables *must* be constructed correctly.
-            return indexTable.getTable5(j - t4);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString() {
-            return "Marsaglia Tsang Wang discrete deviate [" + rng.toString() + "]";
-        }
-    }
-
-    /**
-     * The sampler using base 1024 (2^10) and 3 look-up tables to tabulate 2^30 numbers.
-     */
-    private static class Base1024Sampler implements DiscreteSampler {
-        /** Limit for look-up table 1. */
-        private final int t1;
-        /** Limit for look-up table 2. */
-        private final int t2;
-
-        /** Underlying source of randomness. */
-        private final UniformRandomProvider rng;
-
-        /** Index look-up table. */
-        private final IndexTable indexTable;
-
-        /**
-         * @param rng Generator of uniformly distributed random numbers.
-         * @param prob The probabilities.
-         * @param offset The offset (must be positive).
-         */
-        Base1024Sampler(UniformRandomProvider rng,
-                        int[] prob,
-                        int offset) {
-            this.rng = rng;
-
-            // Get table sizes for each base-1024 digit
-            int n1 = 0;
-            int n2 = 0;
-            int n3 = 0;
-            for (final int m : prob) {
-                n1 += getBase1024Digit(m, 1);
-                n2 += getBase1024Digit(m, 2);
-                n3 += getBase1024Digit(m, 3);
-            }
-
-            // Allocate tables based on the maximum index
-            indexTable = createIndexTable(prob.length + offset - 1, n1, n2, n3, 0, 0);
-
-            // Compute offsets
-            t1 = n1 << 20;
-            t2 = t1 + (n2 << 10);
-            n1 = n2 = n3 = 0;
-
-            // Fill tables
-            for (int i = 0; i < prob.length; i++) {
-                final int m = prob[i];
-                final int k = i + offset;
-                indexTable.fillTable1(n1, n1 += getBase1024Digit(m, 1), k);
-                indexTable.fillTable2(n2, n2 += getBase1024Digit(m, 2), k);
-                indexTable.fillTable3(n3, n3 += getBase1024Digit(m, 3), k);
-            }
-        }
-
-        /**
-         * Gets the k<sup>th</sup> base 1024 digit of {@code m}.
-         *
-         * @param m the value m.
-         * @param k the digit.
-         * @return the base 1024 digit
-         */
-        private static int getBase1024Digit(int m, int k) {
-            return (m >>> (30 - 10 * k)) & 1023;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public int sample() {
-            final int j = rng.nextInt() >>> 2;
-            if (j < t1) {
-                return indexTable.getTable1(j >>> 20);
-            }
-            if (j < t2) {
-                return indexTable.getTable2((j - t1) >>> 10);
-            }
-            // Note the tables are filled on the assumption that the sum of the probabilities.
-            // is >=2^30. If this is not true then the final table will be smaller by the
-            // difference. So the tables *must* be constructed correctly.
-            return indexTable.getTable3(j - t2);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString() {
-            return "Marsaglia Tsang Wang discrete deviate [" + rng.toString() + "]";
-        }
-    }
-
-    /**
-     * Create a new instance for probabilities {@code p(i)} where the sample value
-     * {@code x} is {@code i + offset}.
+     * Create a new instance for probabilities {@code p(i)} where the sample value {@code x} is
+     * {@code i + offset}.
      *
-     * <p>The sum of the probabilities must be >= 2<sup>30</sup>. Only the values for
-     * cumulative probability up to 2<sup>30</sup> will be sampled.</p>
+     * <p>The sum of the probabilities must be >= 2<sup>30</sup>. Only the
+     * values for cumulative probability up to 2<sup>30</sup> will be sampled.</p>
      *
      * <p>Note: This is package-private for use by discrete distribution samplers that can
      * compute their probability distribution.</p>
@@ -588,14 +348,12 @@ public class MarsagliaTsangWangDiscreteSamplerNew implements DiscreteSampler {
      * @param rng Generator of uniformly distributed random numbers.
      * @param prob The probabilities.
      * @param offset The offset (must be positive).
-     * @param baseOption Control the size of the base used in the look-up table.
-     * @throws IllegalArgumentException if the offset is negative or the maximum sample
-     * index exceeds the maximum positive {@code int} value (2<sup>31</sup> - 1).
+     * @throws IllegalArgumentException if the offset is negative or the maximum sample index
+     * exceeds the maximum positive {@code int} value (2<sup>31</sup> - 1).
      */
-    MarsagliaTsangWangDiscreteSamplerNew(UniformRandomProvider rng,
+    MarsagliaTsangWangDiscreteSamplerBase10(UniformRandomProvider rng,
                                       int[] prob,
-                                      int offset,
-                                      BaseOption baseOption) {
+                                      int offset) {
         if (offset < 0) {
             throw new IllegalArgumentException("Unsupported offset: " + offset);
         }
@@ -603,11 +361,46 @@ public class MarsagliaTsangWangDiscreteSamplerNew implements DiscreteSampler {
             throw new IllegalArgumentException("Unsupported sample index: " + (prob.length + offset));
         }
 
-        if (baseOption == BaseOption.BASE_1024) {
-            delegate = new Base1024Sampler(rng, prob, offset);
+        this.rng = rng;
+
+        // Get table sizes for each base-64 digit
+        int n1 = 0;
+        int n2 = 0;
+        int n3 = 0;
+        int n4 = 0;
+        int n5 = 0;
+        for (final int m : prob) {
+            n1 += getBase1024Digit(m, 1);
+            n2 += getBase1024Digit(m, 2);
+            n3 += getBase1024Digit(m, 3);
+            //n4 += getBase1024Digit(m, 4);
+            //n5 += getBase1024Digit(m, 5);
+        }
+
+        // Allocate tables based on the maximum index
+        final int maxIndex = prob.length + offset - 1;
+        if (maxIndex < UNSIGNED_INT_8) {
+            indexTable = new IndexTable8(n1, n2, n3, n4, n5);
+        } else if (maxIndex < UNSIGNED_INT_16) {
+            indexTable = new IndexTable16(n1, n2, n3, n4, n5);
         } else {
-            // Default to base 64
-            delegate = new Base64Sampler(rng, prob, offset);
+            indexTable = new IndexTable32(n1, n2, n3, n4, n5);
+        }
+
+        // Compute offsets
+        t1 = n1 << 20;
+        t2 = t1 + (n2 << 10);
+        n1 = n2 = n3 = n4 = n5 = 0;
+
+        // Fill tables
+        for (int i = 0; i < prob.length; i++) {
+            final int m = prob[i];
+            final int k = i + offset;
+            indexTable.fillTable1(n1, n1 += getBase1024Digit(m, 1), k);
+            indexTable.fillTable2(n2, n2 += getBase1024Digit(m, 2), k);
+            indexTable.fillTable3(n3, n3 += getBase1024Digit(m, 3), k);
+            //indexTable.fillTable4(n4, n4 += getBase1024Digit(m, 4), k);
+            //indexTable.fillTable5(n5, n5 += getBase1024Digit(m, 5), k);
         }
     }
 
@@ -623,15 +416,13 @@ public class MarsagliaTsangWangDiscreteSamplerNew implements DiscreteSampler {
      *
      * @param rng Generator of uniformly distributed random numbers.
      * @param probabilities The list of probabilities.
-     * @param baseOption Control the size of the base used in the look-up table.
      * @throws IllegalArgumentException if {@code probabilities} is null or empty, a
      * probability is negative, infinite or {@code NaN}, or the sum of all
      * probabilities is not strictly positive.
      */
-    public MarsagliaTsangWangDiscreteSamplerNew(UniformRandomProvider rng,
-                                             double[] probabilities,
-                                             BaseOption baseOption) {
-        this(rng, normaliseProbabilities(probabilities), 0, baseOption);
+    public MarsagliaTsangWangDiscreteSamplerBase10(UniformRandomProvider rng,
+                                             double[] probabilities) {
+        this(rng, normaliseProbabilities(probabilities), 0);
     }
 
     /**
@@ -703,36 +494,32 @@ public class MarsagliaTsangWangDiscreteSamplerNew implements DiscreteSampler {
     }
 
     /**
-     * Creates the index table.
+     * Gets the k<sup>th</sup> base 64 digit of {@code m}.
      *
-     * @param maxIndex Maximum index.
-     * @param n1 Size of table 1.
-     * @param n2 Size of table 2.
-     * @param n3 Size of table 3.
-     * @param n4 Size of table 4.
-     * @param n5 Size of table 5.
-     * @return the index table
+     * @param m the value m.
+     * @param k the digit.
+     * @return the base 64 digit
      */
-    private static IndexTable createIndexTable(int maxIndex,
-                                                 int n1, int n2, int n3, int n4, int n5) {
-        if (maxIndex < UNSIGNED_INT_8) {
-            return new IndexTable8(n1, n2, n3, n4, n5);
-        }
-        if (maxIndex < UNSIGNED_INT_16) {
-            return new IndexTable16(n1, n2, n3, n4, n5);
-        }
-        return new IndexTable32(n1, n2, n3, n4, n5);
+    private static int getBase1024Digit(int m, int k) {
+        return (m >>> (30 - 10 * k)) & 1023;
     }
 
     /** {@inheritDoc} */
     @Override
     public int sample() {
-        return delegate.sample();
+        final int j = rng.nextInt() >>> 2;
+        if (j < t1) {
+            return indexTable.getTable1(j >>> 20);
+        }
+        if (j < t2) {
+            return indexTable.getTable2((j - t1) >>> 10);
+        }
+        return indexTable.getTable3(j - t2);
     }
 
     /** {@inheritDoc} */
     @Override
     public String toString() {
-        return delegate.toString();
+        return "Marsaglia Tsang Wang discrete deviate [" + rng.toString() + "]";
     }
 }

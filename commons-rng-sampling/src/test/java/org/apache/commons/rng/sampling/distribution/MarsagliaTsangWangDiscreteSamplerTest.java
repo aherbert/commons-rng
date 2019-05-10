@@ -20,6 +20,7 @@ import org.apache.commons.math3.stat.inference.ChiSquareTest;
 import org.apache.commons.rng.UniformRandomProvider;
 import org.apache.commons.rng.core.source32.IntProvider;
 import org.apache.commons.rng.core.source64.SplitMix64;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerDynamic.BaseOption;
 import org.apache.commons.rng.simple.RandomSource;
 import org.junit.Assert;
 import org.junit.Test;
@@ -328,5 +329,30 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
             // This should not be called enough to overflow count
             return values[count++ % values.length];
         }
+    }
+
+    @Test
+    public void testImplementations() {
+        Long seed = 237648682L;
+        double[] p = { 0.1, 0.2, 0.3, 0.4 };
+        testImplementation(new MarsagliaTsangWangDiscreteSampler2D(new SplitMix64(seed), p), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerByte(new SplitMix64(seed), p), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerShort(new SplitMix64(seed), p), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerByte2D(new SplitMix64(seed), p), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerShort2D(new SplitMix64(seed), p), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerDynamic(new SplitMix64(seed), p, BaseOption.BASE_64), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(new SplitMix64(seed), p, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_64), seed, p);
+    }
+
+    private void testImplementation(DiscreteSampler sampler, Long seed,
+            double[] p) {
+        final DiscreteSampler ref = 
+                new MarsagliaTsangWangDiscreteSampler(new SplitMix64(seed), p);
+
+        String msg = "Does not match reference: " + sampler.getClass().getSimpleName();
+        for (int i = 0; i < 100; i++) {
+            Assert.assertEquals(msg, ref.sample(), sampler.sample());
+        }
+
     }
 }

@@ -191,7 +191,7 @@ public class MarsagliaTsangWangSmallMeanPoissonSampler2 implements DiscreteSampl
             prob[mode - offset] += Math.max(0, INT_30 - sum);
         }
 
-        delegate = new MarsagliaTsangWangDiscreteSampler2(rng, prob, offset);
+        delegate = new MarsagliaTsangWangDiscreteSampler2D(rng, prob, offset);
     }
 
     /**

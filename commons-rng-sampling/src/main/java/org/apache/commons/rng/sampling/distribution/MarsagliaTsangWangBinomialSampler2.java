@@ -224,7 +224,7 @@ public class MarsagliaTsangWangBinomialSampler2 implements DiscreteSampler {
         final int mode = (int) ((trials + 1) * p) - offset;
         prob[mode] += Math.max(0, INT_30 - sum);
 
-        final MarsagliaTsangWangDiscreteSampler2 sampler = new MarsagliaTsangWangDiscreteSampler2(rng, prob, offset);
+        final MarsagliaTsangWangDiscreteSampler2D sampler = new MarsagliaTsangWangDiscreteSampler2D(rng, prob, offset);
 
         if (inversion) {
             delegate = new InversionBinomialDiscreteSampler(trials, sampler);
