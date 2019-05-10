@@ -108,6 +108,19 @@ public class DiscreteSamplersPerformance {
                 })
         private String samplerType;
 
+        /**
+         * The sampler type.
+         */
+        @Param({
+                "4",
+                "8",
+                "16",
+                "32",
+                "64",
+                "128",
+                })
+        private int length;
+
         /** The sampler. */
         private DiscreteSampler sampler;
 
@@ -124,6 +137,13 @@ public class DiscreteSamplersPerformance {
         public void setup() {
             super.setup();
             final UniformRandomProvider rng = getGenerator();
+
+            // This will be normalised by the sampler
+            final double[] probabilities = new double[length];
+            for (int i = 0; i < probabilities.length; i++) {
+                probabilities[i] = (i + 1.0) / probabilities.length;
+            }
+
             if ("DiscreteUniformSampler".equals(samplerType)) {
                 sampler = new DiscreteUniformSampler(rng, -98, 76);
             } else if ("RejectionInversionZipfSampler".equals(samplerType)) {
@@ -136,37 +156,37 @@ public class DiscreteSamplersPerformance {
             } else if ("GeometricSampler".equals(samplerType)) {
                 sampler = new GeometricSampler(rng, 0.21);
             } else if ("MarsagliaTsangWangDiscreteSampler".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSampler(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSampler2D".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSampler2D(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSampler2D(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerByte".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerByte(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerByte(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerShort".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerShort(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerShort(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerByte2D".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerByte2D(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerByte2D(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerShort2D".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerShort2D(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerShort2D(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerBase10".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerBase10(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerBase10(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerBase10_2D".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerBase10_2D(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerBase10_2D(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerBase10Byte".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Byte(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Byte(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerBase10Short".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Short(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Short(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerBase10Byte2D".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Byte2D(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Byte2D(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerBase10Short2D".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Short2D(rng, new double[] {0.1, 0.2, 0.3, 0.4});
+                sampler = new MarsagliaTsangWangDiscreteSamplerBase10Short2D(rng, probabilities);
             } else if ("MarsagliaTsangWangDiscreteSamplerDynamic".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerDynamic(rng, new double[] {0.1, 0.2, 0.3, 0.4}, BaseOption.BASE_64);
+                sampler = new MarsagliaTsangWangDiscreteSamplerDynamic(rng, probabilities, BaseOption.BASE_64);
             } else if ("MarsagliaTsangWangDiscreteSamplerDynamicBase10".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerDynamic(rng, new double[] {0.1, 0.2, 0.3, 0.4}, BaseOption.BASE_1024);
+                sampler = new MarsagliaTsangWangDiscreteSamplerDynamic(rng, probabilities, BaseOption.BASE_1024);
             } else if ("MarsagliaTsangWangDiscreteSamplerDynamicDelegated".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(rng, new double[] {0.1, 0.2, 0.3, 0.4}, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_64);
+                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(rng, probabilities, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_64);
             } else if ("MarsagliaTsangWangDiscreteSamplerDynamicDelegatedBase10".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(rng, new double[] {0.1, 0.2, 0.3, 0.4}, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_1024);
+                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(rng, probabilities, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_1024);
             } else if ("MarsagliaTsangWangSmallMeanPoissonSampler".equals(samplerType)) {
                 sampler = new MarsagliaTsangWangSmallMeanPoissonSampler(rng, 22.9);
             } else if ("MarsagliaTsangWangSmallMeanPoissonSampler2".equals(samplerType)) {
