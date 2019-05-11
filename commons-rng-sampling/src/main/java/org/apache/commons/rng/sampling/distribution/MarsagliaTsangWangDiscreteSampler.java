@@ -381,6 +381,8 @@ public class MarsagliaTsangWangDiscreteSampler implements DiscreteSampler {
             n5 += getBase64Digit(m, 5);
         }
 
+        //System.out.printf("Size %d%n", n1+n2+n3+n4+n5);
+
         // Allocate tables based on the maximum index
         final int maxIndex = prob.length + offset - 1;
         if (maxIndex < UNSIGNED_INT_8) {

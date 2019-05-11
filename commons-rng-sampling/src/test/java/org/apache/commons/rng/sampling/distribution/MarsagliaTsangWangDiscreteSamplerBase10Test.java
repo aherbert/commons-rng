@@ -217,30 +217,30 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Test {
      * Test the storage requirements for a worst case set of 2^8 probabilities. This tests the
      * limits described in the class Javadoc is correct.
      */
-    //@Test
+    @Test
     public void testStorageRequirements8() {
         // Max digits from 2^22:
-        // (2^4 + 2^6 + 2^6 + 2^6)
+        // (2^4 + 2^10 + 2^10)
         // Storage in bytes
-        // = (15 + 3 * 63) * 2^8
-        // = 52224 B
-        // = 0.0522 MB
-        checkStorageRequirements(8, 0.06);
+        // = (15 + 2 * 1023) * 2^8
+        // = 527616 B
+        // = 0.528 MB
+        checkStorageRequirements(8, 0.53);
     }
 
     /**
      * Test the storage requirements for a worst case set of 2^16 probabilities. This tests the
      * limits described in the class Javadoc is correct.
      */
-    //@Test
+    @Test
     public void testStorageRequirements16() {
         // Max digits from 2^14:
-        // (2^2 + 2^6 + 2^6)
+        // (2^4 + 2^10)
         // Storage in bytes
-        // = 2 * (3 + 2 * 63) * 2^16
-        // = 16908288 B
-        // = 16.91 MB
-        checkStorageRequirements(16, 17.0);
+        // = 2 * (15 + 1023) * 2^16
+        // = 136052736 B
+        // = 136.05 MB
+        checkStorageRequirements(16, 136.1);
     }
 
     /**
@@ -270,8 +270,6 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Test {
         final int d1 = getBase1024Digit(m, 1);
         final int d2 = getBase1024Digit(m, 2);
         final int d3 = getBase1024Digit(m, 3);
-        final int d4 = getBase1024Digit(m, 4);
-        final int d5 = getBase1024Digit(m, 5);
         // Compute storage in MB assuming 2 byte storage
         int bytes;
         if (k <= 8) {
@@ -281,7 +279,7 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Test {
         } else {
             bytes = 4;
         }
-        final double storageMB = bytes * 1e-6 * (d1 + d2 + d3 + d4 + d5) * maxSamples;
+        final double storageMB = bytes * 1e-6 * (d1 + d2 + d3) * maxSamples;
         Assert.assertTrue(
             "Worst case uniform distribution storage " + storageMB + "MB is above expected limit: " + expectedLimitMB,
             storageMB < expectedLimitMB);

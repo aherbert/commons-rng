@@ -118,6 +118,7 @@ public class DiscreteSamplersPerformance {
                 "32",
                 "64",
                 "128",
+                "256",
                 })
         private int length;
 

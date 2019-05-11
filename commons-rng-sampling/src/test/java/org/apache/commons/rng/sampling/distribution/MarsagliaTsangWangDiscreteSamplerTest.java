@@ -355,4 +355,16 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
         }
 
     }
+
+    //@Test
+    public void testMemoryFootPrint() {
+        SplitMix64 rng = new SplitMix64(0L);
+        for (int length : new int[] { 4, 8, 16, 32, 64, 128 }) {
+            final double[] probabilities = new double[length];
+            for (int i = 0; i < probabilities.length; i++) {
+                probabilities[i] = (i + 1.0) / probabilities.length;
+            }
+            new MarsagliaTsangWangDiscreteSamplerBase10(rng, probabilities);
+        }
+    }
 }

@@ -367,30 +367,28 @@ public class MarsagliaTsangWangDiscreteSamplerBase10 implements DiscreteSampler 
         int n1 = 0;
         int n2 = 0;
         int n3 = 0;
-        int n4 = 0;
-        int n5 = 0;
         for (final int m : prob) {
             n1 += getBase1024Digit(m, 1);
             n2 += getBase1024Digit(m, 2);
             n3 += getBase1024Digit(m, 3);
-            //n4 += getBase1024Digit(m, 4);
-            //n5 += getBase1024Digit(m, 5);
         }
+
+        //System.out.printf("Size %d%n", n1+n2+n3);
 
         // Allocate tables based on the maximum index
         final int maxIndex = prob.length + offset - 1;
         if (maxIndex < UNSIGNED_INT_8) {
-            indexTable = new IndexTable8(n1, n2, n3, n4, n5);
+            indexTable = new IndexTable8(n1, n2, n3, 0, 0);
         } else if (maxIndex < UNSIGNED_INT_16) {
-            indexTable = new IndexTable16(n1, n2, n3, n4, n5);
+            indexTable = new IndexTable16(n1, n2, n3, 0, 0);
         } else {
-            indexTable = new IndexTable32(n1, n2, n3, n4, n5);
+            indexTable = new IndexTable32(n1, n2, n3, 0, 0);
         }
 
         // Compute offsets
         t1 = n1 << 20;
         t2 = t1 + (n2 << 10);
-        n1 = n2 = n3 = n4 = n5 = 0;
+        n1 = n2 = n3 = 0;
 
         // Fill tables
         for (int i = 0; i < prob.length; i++) {
@@ -399,8 +397,6 @@ public class MarsagliaTsangWangDiscreteSamplerBase10 implements DiscreteSampler 
             indexTable.fillTable1(n1, n1 += getBase1024Digit(m, 1), k);
             indexTable.fillTable2(n2, n2 += getBase1024Digit(m, 2), k);
             indexTable.fillTable3(n3, n3 += getBase1024Digit(m, 3), k);
-            //indexTable.fillTable4(n4, n4 += getBase1024Digit(m, 4), k);
-            //indexTable.fillTable5(n5, n5 += getBase1024Digit(m, 5), k);
         }
     }
 
