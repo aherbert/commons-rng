@@ -333,7 +333,7 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Test {
         testImplementation(new MarsagliaTsangWangDiscreteSamplerBase10Byte2D(new SplitMix64(seed), p), seed, p);
         testImplementation(new MarsagliaTsangWangDiscreteSamplerBase10Short2D(new SplitMix64(seed), p), seed, p);
         testImplementation(new MarsagliaTsangWangDiscreteSamplerDynamic(new SplitMix64(seed), p, BaseOption.BASE_1024), seed, p);
-        testImplementation(new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(new SplitMix64(seed), p, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_1024), seed, p);
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerDynamicShort(new SplitMix64(seed), p, MarsagliaTsangWangDiscreteSamplerDynamicShort.BaseOption.BASE_1024), seed, p);
     }
 
     private void testImplementation(DiscreteSampler sampler, Long seed,

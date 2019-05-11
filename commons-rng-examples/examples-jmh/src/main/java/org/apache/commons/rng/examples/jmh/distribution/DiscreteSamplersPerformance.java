@@ -37,7 +37,7 @@ import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSa
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerByte2D;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerDynamic;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerDynamic.BaseOption;
-import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerDynamicDelegated;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerDynamicShort;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerShort;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSamplerShort2D;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangSmallMeanPoissonSampler;
@@ -99,8 +99,8 @@ public class DiscreteSamplersPerformance {
                 "MarsagliaTsangWangDiscreteSamplerBase10Short2D",
                 "MarsagliaTsangWangDiscreteSamplerDynamic",
                 "MarsagliaTsangWangDiscreteSamplerDynamicBase10",
-                "MarsagliaTsangWangDiscreteSamplerDynamicDelegated",
-                "MarsagliaTsangWangDiscreteSamplerDynamicDelegatedBase10",
+                "MarsagliaTsangWangDiscreteSamplerDynamicShort",
+                "MarsagliaTsangWangDiscreteSamplerDynamicShortBase10",
                 //"MarsagliaTsangWangSmallMeanPoissonSampler",
                 //"MarsagliaTsangWangSmallMeanPoissonSampler2",
                 //"MarsagliaTsangWangBinomialSampler",
@@ -183,10 +183,10 @@ public class DiscreteSamplersPerformance {
                 sampler = new MarsagliaTsangWangDiscreteSamplerDynamic(rng, probabilities, BaseOption.BASE_64);
             } else if ("MarsagliaTsangWangDiscreteSamplerDynamicBase10".equals(samplerType)) {
                 sampler = new MarsagliaTsangWangDiscreteSamplerDynamic(rng, probabilities, BaseOption.BASE_1024);
-            } else if ("MarsagliaTsangWangDiscreteSamplerDynamicDelegated".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(rng, probabilities, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_64);
-            } else if ("MarsagliaTsangWangDiscreteSamplerDynamicDelegatedBase10".equals(samplerType)) {
-                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicDelegated(rng, probabilities, MarsagliaTsangWangDiscreteSamplerDynamicDelegated.BaseOption.BASE_1024);
+            } else if ("MarsagliaTsangWangDiscreteSamplerDynamicShort".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicShort(rng, probabilities, MarsagliaTsangWangDiscreteSamplerDynamicShort.BaseOption.BASE_64);
+            } else if ("MarsagliaTsangWangDiscreteSamplerDynamicShortBase10".equals(samplerType)) {
+                sampler = new MarsagliaTsangWangDiscreteSamplerDynamicShort(rng, probabilities, MarsagliaTsangWangDiscreteSamplerDynamicShort.BaseOption.BASE_1024);
             } else if ("MarsagliaTsangWangSmallMeanPoissonSampler".equals(samplerType)) {
                 sampler = new MarsagliaTsangWangSmallMeanPoissonSampler(rng, 22.9);
             } else if ("MarsagliaTsangWangSmallMeanPoissonSampler2".equals(samplerType)) {

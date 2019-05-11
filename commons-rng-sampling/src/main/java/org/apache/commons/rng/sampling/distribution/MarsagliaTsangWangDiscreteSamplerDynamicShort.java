@@ -41,7 +41,7 @@ import org.apache.commons.rng.UniformRandomProvider;
  * @see <a href="http://dx.doi.org/10.18637/jss.v011.i03">Margsglia, et al (2004) JSS Vol.
  * 11, Issue 3</a>
  */
-public class MarsagliaTsangWangDiscreteSamplerDynamicDelegated implements DiscreteSampler {
+public class MarsagliaTsangWangDiscreteSamplerDynamicShort implements DiscreteSampler {
     /** The exclusive upper bound for an unsigned 8-bit integer. */
     private static final int UNSIGNED_INT_8 = 1 << 8;
     /** The exclusive upper bound for an unsigned 16-bit integer. */
@@ -80,7 +80,7 @@ public class MarsagliaTsangWangDiscreteSamplerDynamicDelegated implements Discre
      * @throws IllegalArgumentException if the offset is negative or the maximum sample
      * index exceeds the maximum positive {@code int} value (2<sup>31</sup> - 1).
      */
-    MarsagliaTsangWangDiscreteSamplerDynamicDelegated(UniformRandomProvider rng,
+    MarsagliaTsangWangDiscreteSamplerDynamicShort(UniformRandomProvider rng,
                                       int[] prob,
                                       int offset,
                                       BaseOption baseOption) {
@@ -116,7 +116,7 @@ public class MarsagliaTsangWangDiscreteSamplerDynamicDelegated implements Discre
      * probability is negative, infinite or {@code NaN}, or the sum of all
      * probabilities is not strictly positive.
      */
-    public MarsagliaTsangWangDiscreteSamplerDynamicDelegated(UniformRandomProvider rng,
+    public MarsagliaTsangWangDiscreteSamplerDynamicShort(UniformRandomProvider rng,
                                              double[] probabilities,
                                              BaseOption baseOption) {
         this(rng, normaliseProbabilities(probabilities), 0, baseOption);
