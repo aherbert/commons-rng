@@ -50,8 +50,12 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Short implements DiscreteSam
     /** Limit for look-up table 2. */
     private final int t2;
 
-    /** Look-up tables. */
-    private final short[][] tables;
+    /** Look-up table table1. */
+    private final short[] table1;
+    /** Look-up table table2. */
+    private final short[] table2;
+    /** Look-up table table3. */
+    private final short[] table3;
 
     /** Underlying source of randomness. */
     private final UniformRandomProvider rng;
@@ -94,9 +98,9 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Short implements DiscreteSam
             n3 += getBase1024Digit(m, 3);
         }
 
-        tables = new short[][] { new short[n1],
-                                 new short[n2],
-                                 new short[n3] };
+        table1 = new short[n1];
+        table2 = new short[n2];
+        table3 = new short[n3];
 
         // Compute offsets
         t1 = n1 << 20;
@@ -107,9 +111,9 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Short implements DiscreteSam
         for (int i = 0; i < prob.length; i++) {
             final int m = prob[i];
             final short k = (short)(i + offset);
-            fill(tables[0], n1, n1 += getBase1024Digit(m, 1), k);
-            fill(tables[1], n2, n2 += getBase1024Digit(m, 2), k);
-            fill(tables[2], n3, n3 += getBase1024Digit(m, 3), k);
+            fill(table1, n1, n1 += getBase1024Digit(m, 1), k);
+            fill(table2, n2, n2 += getBase1024Digit(m, 2), k);
+            fill(table3, n3, n3 += getBase1024Digit(m, 3), k);
         }
     }
 
@@ -233,12 +237,12 @@ public class MarsagliaTsangWangDiscreteSamplerBase10Short implements DiscreteSam
     public int sample() {
         final int j = rng.nextInt() >>> 2;
         if (j < t1) {
-            return tables[0][j >>> 20] & MASK;
+            return table1[j >>> 20] & MASK;
         }
         if (j < t2) {
-            return tables[1][(j - t1) >>> 10] & MASK;
+            return table2[(j - t1) >>> 10] & MASK;
         }
-        return tables[2][j - t2] & MASK;
+        return table3[j - t2] & MASK;
     }
 
     /** {@inheritDoc} */
