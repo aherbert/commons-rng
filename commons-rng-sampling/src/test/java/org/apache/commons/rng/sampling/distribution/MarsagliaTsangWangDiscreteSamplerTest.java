@@ -350,7 +350,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
                 new MarsagliaTsangWangDiscreteSampler(new SplitMix64(seed), p);
 
         String msg = "Does not match reference: " + sampler.getClass().getSimpleName();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             Assert.assertEquals(msg, ref.sample(), sampler.sample());
         }
 
