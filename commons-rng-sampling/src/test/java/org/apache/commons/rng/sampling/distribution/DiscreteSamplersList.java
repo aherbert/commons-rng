@@ -136,7 +136,7 @@ public class DiscreteSamplersList {
                 new SmallMeanPoissonSampler(RandomSource.create(RandomSource.KISS), meanPoisson));
             add(LIST, new org.apache.commons.math3.distribution.PoissonDistribution(unusedRng, meanPoisson, epsilonPoisson, maxIterationsPoisson),
                 MathArrays.sequence(10, 0, 1),
-                new MarsagliaTsangWangSmallMeanPoissonSampler(RandomSource.create(RandomSource.XO_SHI_RO_128_PLUS), meanPoisson));
+                MarsagliaTsangWangDiscreteSampler.createPoissonDistribution(RandomSource.create(RandomSource.XO_SHI_RO_128_PLUS), meanPoisson));
             // Poisson (40 < mean < 80).
             final double largeMeanPoisson = 67.89;
             add(LIST, new org.apache.commons.math3.distribution.PoissonDistribution(unusedRng, largeMeanPoisson, epsilonPoisson, maxIterationsPoisson),
@@ -148,7 +148,7 @@ public class DiscreteSamplersList {
                 new LargeMeanPoissonSampler(RandomSource.create(RandomSource.SPLIT_MIX_64), largeMeanPoisson));
             add(LIST, new org.apache.commons.math3.distribution.PoissonDistribution(unusedRng, largeMeanPoisson, epsilonPoisson, maxIterationsPoisson),
                 MathArrays.sequence(50, (int) (largeMeanPoisson - 25), 1),
-                new MarsagliaTsangWangSmallMeanPoissonSampler(RandomSource.create(RandomSource.XO_RO_SHI_RO_128_PLUS), largeMeanPoisson));
+                MarsagliaTsangWangDiscreteSampler.createPoissonDistribution(RandomSource.create(RandomSource.XO_RO_SHI_RO_128_PLUS), largeMeanPoisson));
             // Poisson (mean >> 40).
             final double veryLargeMeanPoisson = 543.21;
             add(LIST, new org.apache.commons.math3.distribution.PoissonDistribution(unusedRng, veryLargeMeanPoisson, epsilonPoisson, maxIterationsPoisson),

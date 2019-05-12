@@ -487,6 +487,12 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
         public int sample() {
             return result;
         }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString() {
+            return BINOMIAL_NAME + " deviate";
+        }
     }
 
     /**
@@ -516,6 +522,12 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
         @Override
         public int sample() {
             return trials - sampler.sample();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString() {
+            return sampler.toString();
         }
     }
 
