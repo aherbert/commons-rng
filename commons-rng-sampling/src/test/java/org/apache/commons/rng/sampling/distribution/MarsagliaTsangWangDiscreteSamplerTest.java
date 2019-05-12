@@ -32,48 +32,48 @@ import org.junit.Test;
 public class MarsagliaTsangWangDiscreteSamplerTest {
     // Tests for the package-private constructor using int[] + offset
 
-    /**
-     * Test constructor throws with max index above integer max.
-     */
-    @Test(expected = IllegalArgumentException.class)
-    public void testConstructorThrowsWithMaxIndexAboveIntegerMax() {
-        final int[] prob = new int[1];
-        final int offset = Integer.MAX_VALUE;
-        createSampler(prob, offset);
-    }
-
-    /**
-     * Test constructor throws with negative offset.
-     */
-    @Test(expected = IllegalArgumentException.class)
-    public void testConstructorThrowsWithNegativeOffset() {
-        final int[] prob = new int[1];
-        final int offset = -1;
-        createSampler(prob, offset);
-    }
-
-    /**
-     * Test construction is allowed or when max index equals integer max.
-     */
-    @Test
-    public void testConstructorWhenMaxIndexEqualsIntegerMax() {
-        final int[] prob = new int[1];
-        prob[0] = 1 << 30; // So the total probability is 2^30
-        final int offset = Integer.MAX_VALUE - 1;
-        createSampler(prob, offset);
-    }
-
-    /**
-     * Creates the sampler.
-     *
-     * @param prob the probabilities
-     * @param offset the offset
-     * @return the sampler
-     */
-    private static MarsagliaTsangWangDiscreteSampler createSampler(final int[] probabilities, int offset) {
-        final UniformRandomProvider rng = new SplitMix64(0L);
-        return new MarsagliaTsangWangDiscreteSampler(rng, probabilities, offset);
-    }
+//    /**
+//     * Test constructor throws with max index above integer max.
+//     */
+//    @Test(expected = IllegalArgumentException.class)
+//    public void testConstructorThrowsWithMaxIndexAboveIntegerMax() {
+//        final int[] prob = new int[1];
+//        final int offset = Integer.MAX_VALUE;
+//        createSampler(prob, offset);
+//    }
+//
+//    /**
+//     * Test constructor throws with negative offset.
+//     */
+//    @Test(expected = IllegalArgumentException.class)
+//    public void testConstructorThrowsWithNegativeOffset() {
+//        final int[] prob = new int[1];
+//        final int offset = -1;
+//        createSampler(prob, offset);
+//    }
+//
+//    /**
+//     * Test construction is allowed or when max index equals integer max.
+//     */
+//    @Test
+//    public void testConstructorWhenMaxIndexEqualsIntegerMax() {
+//        final int[] prob = new int[1];
+//        prob[0] = 1 << 30; // So the total probability is 2^30
+//        final int offset = Integer.MAX_VALUE - 1;
+//        createSampler(prob, offset);
+//    }
+//
+//    /**
+//     * Creates the sampler.
+//     *
+//     * @param prob the probabilities
+//     * @param offset the offset
+//     * @return the sampler
+//     */
+//    private static MarsagliaTsangWangDiscreteSampler createSampler(final int[] probabilities, int offset) {
+//        final UniformRandomProvider rng = new SplitMix64(0L);
+//        return MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng, probabilities, offset);
+//    }
 
     // Tests for the public constructor using double[]
 
@@ -120,7 +120,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
      */
     private static MarsagliaTsangWangDiscreteSampler createSampler(double[] probabilities) {
         final UniformRandomProvider rng = new SplitMix64(0L);
-        return new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
+        return MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng, probabilities);
     }
 
     // Sampling tests
@@ -175,9 +175,13 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
         final int offset2 = 1 << 8;
         final int offset3 = 1 << 16;
 
-        final MarsagliaTsangWangDiscreteSampler sampler1 = new MarsagliaTsangWangDiscreteSampler(rng1, prob, offset1);
-        final MarsagliaTsangWangDiscreteSampler sampler2 = new MarsagliaTsangWangDiscreteSampler(rng2, prob, offset2);
-        final MarsagliaTsangWangDiscreteSampler sampler3 = new MarsagliaTsangWangDiscreteSampler(rng3, prob, offset3);
+        final double[] p1 = createProbabilities(offset1, prob);
+        final double[] p2 = createProbabilities(offset2, prob);
+        final double[] p3 = createProbabilities(offset3, prob);
+
+        final MarsagliaTsangWangDiscreteSampler sampler1 = MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng1, p1);
+        final MarsagliaTsangWangDiscreteSampler sampler2 = MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng2, p2);
+        final MarsagliaTsangWangDiscreteSampler sampler3 = MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng3, p3);
 
         for (int i = 0; i < values.length; i++) {
             // Remove offsets
@@ -187,6 +191,21 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
             Assert.assertEquals("Offset sample 1 and 2 do not match", s1, s2);
             Assert.assertEquals("Offset Sample 1 and 3 do not match", s1, s3);
         }
+    }
+
+    /**
+     * Creates the probabilities using zero padding below the values.
+     *
+     * @param offset the offset
+     * @param prob the probability values
+     * @return the zero-padded probabilities
+     */
+    private static double[] createProbabilities(int offset, int[] prob) {
+        double[] probabilities = new double[offset + prob.length];
+        for (int i = 0; i < prob.length; i++) {
+            probabilities[i + offset] = prob[i];
+        }
+        return probabilities;
     }
 
     /**
@@ -203,12 +222,12 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
 
         // First test the table is completely filled to 2^30
         final UniformRandomProvider dummyRng = new FixedSequenceIntProvider(new int[] { 0xffffffff});
-        final MarsagliaTsangWangDiscreteSampler dummySampler = new MarsagliaTsangWangDiscreteSampler(dummyRng, probabilities);
+        final MarsagliaTsangWangDiscreteSampler dummySampler = MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(dummyRng, probabilities);
         // This will throw if the table is incomplete as it hits the upper limit
         dummySampler.sample();
 
         // Do a test of the actual sampler
-        final MarsagliaTsangWangDiscreteSampler sampler = new MarsagliaTsangWangDiscreteSampler(rng, probabilities);
+        final MarsagliaTsangWangDiscreteSampler sampler = MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng, probabilities);
 
         final int numberOfSamples = 10000;
         final long[] samples = new long[probabilities.length];
@@ -335,6 +354,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
     public void testImplementations() {
         Long seed = 237648682L;
         double[] p = { 0.1, 0.2, 0.3, 0.4 };
+        testImplementation(new MarsagliaTsangWangDiscreteSamplerOriginal(new SplitMix64(seed), p), seed, p);
         testImplementation(new MarsagliaTsangWangDiscreteSampler2D(new SplitMix64(seed), p), seed, p);
         testImplementation(new MarsagliaTsangWangDiscreteSamplerByte(new SplitMix64(seed), p), seed, p);
         testImplementation(new MarsagliaTsangWangDiscreteSamplerShort(new SplitMix64(seed), p), seed, p);
@@ -344,10 +364,9 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
         testImplementation(new MarsagliaTsangWangDiscreteSamplerDynamicShort(new SplitMix64(seed), p, MarsagliaTsangWangDiscreteSamplerDynamicShort.BaseOption.BASE_64), seed, p);
     }
 
-    private void testImplementation(DiscreteSampler sampler, Long seed,
-            double[] p) {
+    private static void testImplementation(DiscreteSampler sampler, Long seed, double[] p) {
         final DiscreteSampler ref = 
-                new MarsagliaTsangWangDiscreteSampler(new SplitMix64(seed), p);
+                MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(new SplitMix64(seed), p);
 
         String msg = "Does not match reference: " + sampler.getClass().getSimpleName();
         for (int i = 0; i < 1000; i++) {
@@ -364,6 +383,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
             for (int i = 0; i < probabilities.length; i++) {
                 probabilities[i] = (i + 1.0) / probabilities.length;
             }
+            //new MarsagliaTsangWangDiscreteSamplerOriginal(rng, probabilities);
             new MarsagliaTsangWangDiscreteSamplerBase10(rng, probabilities);
         }
     }

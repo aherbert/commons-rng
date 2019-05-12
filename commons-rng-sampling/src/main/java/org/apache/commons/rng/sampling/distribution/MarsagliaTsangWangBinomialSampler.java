@@ -42,7 +42,7 @@ import org.apache.commons.rng.UniformRandomProvider;
  * of either a Poisson or a Normal distribution as appropriate.</p>
  *
  * <p>Note: The algorithm ignores any observation where for a sample size of
- * 2<sup>31</sup> the expected number of occurrences is {@code < 0.5}.</p>
+ * 2<sup>30</sup> the expected number of occurrences is {@code < 0.5}.</p>
  *
  * <p>Sampling uses 1 call to {@link UniformRandomProvider#nextInt()}. Storage
  * requirements depend on the probabilities and are capped at 2<sup>17</sup> bytes, or 131
@@ -224,7 +224,8 @@ public class MarsagliaTsangWangBinomialSampler implements DiscreteSampler {
         final int mode = (int) ((trials + 1) * p) - offset;
         prob[mode] += Math.max(0, INT_30 - sum);
 
-        final MarsagliaTsangWangDiscreteSampler sampler = new MarsagliaTsangWangDiscreteSampler(rng, prob, offset);
+        final MarsagliaTsangWangDiscreteSamplerOriginal sampler =
+                new MarsagliaTsangWangDiscreteSamplerOriginal(rng, prob, offset);
 
         if (inversion) {
             delegate = new InversionBinomialDiscreteSampler(trials, sampler);

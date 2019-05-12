@@ -63,7 +63,7 @@ import org.apache.commons.rng.UniformRandomProvider;
  * @see <a href="http://dx.doi.org/10.18637/jss.v011.i03">Margsglia, et al (2004) JSS Vol.
  * 11, Issue 3</a>
  */
-public class MarsagliaTsangWangSmallMeanPoissonSampler2 implements DiscreteSampler {
+public class MarsagliaTsangWangSmallMeanPoissonSampler2D implements DiscreteSampler {
     /**
      * The value 2<sup>30</sup> as an {@code int}.</p>
      */
@@ -93,7 +93,7 @@ public class MarsagliaTsangWangSmallMeanPoissonSampler2 implements DiscreteSampl
      * @param mean Mean.
      * @throws IllegalArgumentException if {@code mean <= 0} or {@code mean > 1024}.
      */
-    public MarsagliaTsangWangSmallMeanPoissonSampler2(UniformRandomProvider rng, double mean) {
+    public MarsagliaTsangWangSmallMeanPoissonSampler2D(UniformRandomProvider rng, double mean) {
         if (mean <= 0) {
             throw new IllegalArgumentException("mean is not strictly positive: " + mean);
         }

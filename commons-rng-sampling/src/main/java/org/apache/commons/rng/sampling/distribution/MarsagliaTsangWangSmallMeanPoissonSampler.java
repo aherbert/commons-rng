@@ -35,7 +35,7 @@ import org.apache.commons.rng.UniformRandomProvider;
  * should be used instead.</p>
  *
  * <p>Note: The algorithm ignores any observation where for a sample size of
- * 2<sup>31</sup> the expected number of occurrences is {@code < 0.5}.</p>
+ * 2<sup>30</sup> the expected number of occurrences is {@code < 0.5}.</p>
  *
  * <p>Sampling uses 1 call to {@link UniformRandomProvider#nextInt()}. Storage requirements
  * depend on the tabulated probability values. Example storage requirements are listed below.</p>
@@ -191,7 +191,7 @@ public class MarsagliaTsangWangSmallMeanPoissonSampler implements DiscreteSample
             prob[mode - offset] += Math.max(0, INT_30 - sum);
         }
 
-        delegate = new MarsagliaTsangWangDiscreteSampler(rng, prob, offset);
+        delegate = new MarsagliaTsangWangDiscreteSamplerOriginal(rng, prob, offset);
     }
 
     /**

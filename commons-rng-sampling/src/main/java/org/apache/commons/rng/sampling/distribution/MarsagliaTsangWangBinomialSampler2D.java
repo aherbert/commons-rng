@@ -52,7 +52,7 @@ import org.apache.commons.rng.UniformRandomProvider;
  * 11, Issue 3</a>
  * @since 1.3
  */
-public class MarsagliaTsangWangBinomialSampler2 implements DiscreteSampler {
+public class MarsagliaTsangWangBinomialSampler2D implements DiscreteSampler {
     /**
      * The value 2<sup>30</sup> as an {@code int}.</p>
      */
@@ -138,7 +138,7 @@ public class MarsagliaTsangWangBinomialSampler2 implements DiscreteSampler {
      * {@code p} is not in the range {@code [0-1]}, or the probability distribution cannot
      * be computed.
      */
-    public MarsagliaTsangWangBinomialSampler2(UniformRandomProvider rng, int trials, double p) {
+    public MarsagliaTsangWangBinomialSampler2D(UniformRandomProvider rng, int trials, double p) {
         if (trials < 0) {
             throw new IllegalArgumentException("Trials is not positive: " + trials);
         }
