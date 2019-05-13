@@ -818,6 +818,23 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
      *
      * <p>Any probability less than 2<sup>-31</sup> will not be observed in samples.</p>
      *
+     * <p>Storage requirements depend on the tabulated probability values. Example storage
+     * requirements are listed below (in kB).</p>
+     *
+     * <pre>
+     *          p
+     * trials   0.5    0.1   0.01  0.001
+     *    4     0.1    0.6    0.4    0.4
+     *   16     0.7    1.1    0.8    0.4
+     *   64     4.7    2.4    1.1    0.5
+     *  256     8.6    5.2    1.9    0.8
+     * 1024    15.6    9.5    3.3    0.9
+     * </pre>
+     *
+     * <p>The method requires that the Binomial distribution probability at {@code x=0} can be computed.
+     * This will fail when {@code (1 - p)^trials == 0} which requires {@code trials} to be large
+     * and/or {@code p} to be small. In this case an exception is raised.</p>
+     *
      * @param rng Generator of uniformly distributed random numbers.
      * @param trials Number of trials.
      * @param p Probability of success.

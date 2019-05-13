@@ -651,4 +651,16 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
             new MarsagliaTsangWangDiscreteSamplerBase10(rng, probabilities);
         }
     }
+
+    //@Test
+    public void testBinomialMemoryFootPrint() {
+        SplitMix64 rng = new SplitMix64(0L);
+        for (int trials : new int[] { 4, 16, 64, 256, 1024 }) {
+            System.out.printf("%4d ", trials);
+            for (double p : new double[] {0.5 ,0.1, 0.01, 0.001}) {
+                MarsagliaTsangWangDiscreteSampler.createBinomialDistribution(rng, trials, p);
+            }
+            System.out.println();
+        }
+    }
 }
