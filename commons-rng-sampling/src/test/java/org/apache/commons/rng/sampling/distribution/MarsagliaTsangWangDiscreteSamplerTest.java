@@ -27,98 +27,65 @@ import org.junit.Test;
 
 /**
  * Test for the {@link MarsagliaTsangWangDiscreteSampler}. The tests hit edge cases for
- * the sampler.
+ * the sampler factory methods that build the normalised probability distribution.
+ *
+ * <p>Statistical testing of the sampler is performed using entries in {@link DiscreteSamplersList}.</p>
  */
 public class MarsagliaTsangWangDiscreteSamplerTest {
-    // Tests for the package-private constructor using int[] + offset
-
-//    /**
-//     * Test constructor throws with max index above integer max.
-//     */
-//    @Test(expected = IllegalArgumentException.class)
-//    public void testConstructorThrowsWithMaxIndexAboveIntegerMax() {
-//        final int[] prob = new int[1];
-//        final int offset = Integer.MAX_VALUE;
-//        createSampler(prob, offset);
-//    }
-//
-//    /**
-//     * Test constructor throws with negative offset.
-//     */
-//    @Test(expected = IllegalArgumentException.class)
-//    public void testConstructorThrowsWithNegativeOffset() {
-//        final int[] prob = new int[1];
-//        final int offset = -1;
-//        createSampler(prob, offset);
-//    }
-//
-//    /**
-//     * Test construction is allowed or when max index equals integer max.
-//     */
-//    @Test
-//    public void testConstructorWhenMaxIndexEqualsIntegerMax() {
-//        final int[] prob = new int[1];
-//        prob[0] = 1 << 30; // So the total probability is 2^30
-//        final int offset = Integer.MAX_VALUE - 1;
-//        createSampler(prob, offset);
-//    }
-//
-//    /**
-//     * Creates the sampler.
-//     *
-//     * @param prob the probabilities
-//     * @param offset the offset
-//     * @return the sampler
-//     */
-//    private static MarsagliaTsangWangDiscreteSampler createSampler(final int[] probabilities, int offset) {
-//        final UniformRandomProvider rng = new SplitMix64(0L);
-//        return MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng, probabilities, offset);
-//    }
-
-    // Tests for the public constructor using double[]
-
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithNullProbabilites() {
-        createSampler(null);
+    public void testCreateDiscreteDistributionThrowsWithNullProbabilites() {
+        createDiscreteDistributionSampler(null);
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithZeroLengthProbabilites() {
-        createSampler(new double[0]);
+    public void testCreateDiscreteDistributionThrowsWithZeroLengthProbabilites() {
+        createDiscreteDistributionSampler(new double[0]);
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithNegativeProbabilites() {
-        createSampler(new double[] { -1, 0.1, 0.2 });
+    public void testCreateDiscreteDistributionThrowsWithNegativeProbabilites() {
+        createDiscreteDistributionSampler(new double[] { -1, 0.1, 0.2 });
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithNaNProbabilites() {
-        createSampler(new double[] { 0.1, Double.NaN, 0.2 });
+    public void testCreateDiscreteDistributionThrowsWithNaNProbabilites() {
+        createDiscreteDistributionSampler(new double[] { 0.1, Double.NaN, 0.2 });
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithInfiniteProbabilites() {
-        createSampler(new double[] { 0.1, Double.POSITIVE_INFINITY, 0.2 });
+    public void testCreateDiscreteDistributionThrowsWithInfiniteProbabilites() {
+        createDiscreteDistributionSampler(new double[] { 0.1, Double.POSITIVE_INFINITY, 0.2 });
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithInfiniteSumProbabilites() {
-        createSampler(new double[] { Double.MAX_VALUE, Double.MAX_VALUE });
+    public void testCreateDiscreteDistributionThrowsWithInfiniteSumProbabilites() {
+        createDiscreteDistributionSampler(new double[] { Double.MAX_VALUE, Double.MAX_VALUE });
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testConstructorThrowsWithZeroSumProbabilites() {
-        createSampler(new double[4]);
+    public void testCreateDiscreteDistributionThrowsWithZeroSumProbabilites() {
+        createDiscreteDistributionSampler(new double[4]);
+    }
+
+    /**
+     * Test the {@link Object#toString()} method contains the algorithm author names.
+     */
+    @Test
+    public void testToString() {
+        final DiscreteSampler sampler = createDiscreteDistributionSampler(new double[] { 0.5, 0.5 });
+        String text = sampler.toString();
+        for (String item : new String[] { "Marsaglia", "Tsang", "Wang" }) {
+            Assert.assertTrue("toString missing: " + item, text.contains(item));
+        }
     }
 
     /**
      * Creates the sampler.
      *
-     * @param probabilities the probabilities
+     * @param probabilities Probabilities.
      * @return the sampler
      */
-    private static MarsagliaTsangWangDiscreteSampler createSampler(double[] probabilities) {
+    private static MarsagliaTsangWangDiscreteSampler createDiscreteDistributionSampler(double[] probabilities) {
         final UniformRandomProvider rng = new SplitMix64(0L);
         return MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(rng, probabilities);
     }
@@ -594,6 +561,21 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
     }
 
     /**
+     * Test the sampler with a probability that requires inversion has the same name for 
+     * {@link Object#toString()}.
+     */
+    @Test
+    public void testBinomialSamplerToString() {
+        final UniformRandomProvider rng = new FixedRNG();
+        final int trials = 10;
+        final double p1 = 0.4;
+        final double p2 = 1 - p1;
+        final DiscreteSampler sampler1 = MarsagliaTsangWangDiscreteSampler.createBinomialDistribution(rng, trials, p1);
+        final DiscreteSampler sampler2 = MarsagliaTsangWangDiscreteSampler.createBinomialDistribution(rng, trials, p2);
+        Assert.assertEquals(sampler1.toString(), sampler2.toString());
+    }
+
+    /**
      * Return a fixed sequence of {@code int} output.
      */
     private static class FixedSequenceIntProvider extends IntProvider {
@@ -632,7 +614,7 @@ public class MarsagliaTsangWangDiscreteSamplerTest {
     // TODO: Delete the following from main branch code
     ////////////////////////////////////////////////////
 
-    @Test
+    //@Test
     public void testImplementations() {
         Long seed = 237648682L;
         double[] p = { 0.1, 0.2, 0.3, 0.4 };
