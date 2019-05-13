@@ -163,7 +163,7 @@ public class DiscreteSamplersList {
                 MarsagliaTsangWangDiscreteSampler.createPoissonDistribution(RandomSource.create(RandomSource.XO_RO_SHI_RO_64_SS), veryLargeMeanPoisson));
 
             // Any discrete distribution
-            double[] discreteProbabilities = new double[] { 0.1, 0.2, 0.3, 0.4 };
+            final double[] discreteProbabilities = new double[] { 0.1, 0.2, 0.3, 0.4 };
             add(LIST, discreteProbabilities,
                 MarsagliaTsangWangDiscreteSampler.createDiscreteDistribution(RandomSource.create(RandomSource.XO_SHI_RO_512_PLUS), discreteProbabilities));
         } catch (Exception e) {
