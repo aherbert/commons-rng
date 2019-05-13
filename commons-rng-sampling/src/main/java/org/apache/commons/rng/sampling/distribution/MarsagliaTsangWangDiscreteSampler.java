@@ -824,11 +824,11 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
      * <pre>
      *          p
      * trials   0.5    0.1   0.01  0.001
-     *    4     0.1    0.6    0.4    0.4
-     *   16     0.7    1.1    0.8    0.4
-     *   64     4.7    2.4    1.1    0.5
-     *  256     8.6    5.2    1.9    0.8
-     * 1024    15.6    9.5    3.3    0.9
+     *    4    0.06   0.63   0.44   0.44
+     *   16    0.69   1.14   0.76   0.44
+     *   64    4.73   2.40   1.14   0.51
+     *  256    8.63   5.17   1.89   0.82
+     * 1024   31.12   9.45   3.34   0.89
      * </pre>
      *
      * <p>The method requires that the Binomial distribution probability at {@code x=0} can be computed.
