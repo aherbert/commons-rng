@@ -81,130 +81,47 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
     /** The name of the distribution. */
     private final String distributionName;
 
+    // =========================================================================
+    // Implementation note:
+    //
+    // This sampler uses prepared look-up tables that are searched using a single
+    // random int variate. The look-up tables contain the sample value. The tables
+    // are constructed using probabilities that sum to 2^30. The original
+    // paper by Marsaglia, et al (2004) describe use of 5, 3, or 2 look-up tables
+    // indexed using digits of base 2^6, 2^10 or 2^15. Currently only base 64 (2^6)
+    // is supported using 5 look-up tables.
+    //
+    // The implementations use 8, 16 or 32 bit storage tables to support different
+    // distribution sizes with optimal storage. Separate class implementations of
+    // the same algorithm allow array storage to be accessed directly from 1D tables.
+    // This provides a performance gain over using abstracted storage accessed via
+    // an interface or a single 2D table.
+    //
+    // To allow the optimal implementation to be chosen the sampler is created
+    // using factory methods. The sampler supports any probability distribution
+    // when provided via an array of probabilities and the Poisson and Binomial
+    // distributions for a restricted set of parameters. The restrictions are
+    // imposed by the requirement to compute the entire probability distribution
+    // from the controlling parameter(s) using a recursive method.
+    // =========================================================================
+
     /**
      * An implementation for the sample algorithm based on the decomposition of the
-     * index in the range {@code [0,2^30)} into 5 base-64 digits.
-     *
-     * <p>This is abstract to allow the actual backing storage to be optimised for 8, 16 or 32 bit.</p>
-     */
-    private abstract static class MarsagliaTsangWangBase64DiscreteSampler
-        extends MarsagliaTsangWangDiscreteSampler {
-        /** Limit for look-up table 1. */
-        protected final int t1;
-        /** Limit for look-up table 2. */
-        protected final int t2;
-        /** Limit for look-up table 3. */
-        protected final int t3;
-        /** Limit for look-up table 4. */
-        protected final int t4;
-
-        /**
-         * @param rng Generator of uniformly distributed random numbers.
-         * @param distributionName Distribution name.
-         * @param prob The probabilities.
-         * @param offset The offset (must be positive).
-         */
-        MarsagliaTsangWangBase64DiscreteSampler(UniformRandomProvider rng,
-                                                String distributionName,
-                                                int[] prob,
-                                                int offset) {
-            super(rng, distributionName);
-
-            // Get table sizes for each base-64 digit
-            int n1 = 0;
-            int n2 = 0;
-            int n3 = 0;
-            int n4 = 0;
-            int n5 = 0;
-            for (final int m : prob) {
-                n1 += getBase64Digit(m, 1);
-                n2 += getBase64Digit(m, 2);
-                n3 += getBase64Digit(m, 3);
-                n4 += getBase64Digit(m, 4);
-                n5 += getBase64Digit(m, 5);
-            }
-
-            createTables(n1, n2, n3, n4, n5);
-
-            // Compute offsets
-            t1 = n1 << 24;
-            t2 = t1 + (n2 << 18);
-            t3 = t2 + (n3 << 12);
-            t4 = t3 + (n4 << 6);
-            n1 = n2 = n3 = n4 = n5 = 0;
-
-            // Fill tables
-            for (int i = 0; i < prob.length; i++) {
-                final int m = prob[i];
-                final int k = i + offset;
-                fillTable1(n1, n1 += getBase64Digit(m, 1), k);
-                fillTable2(n2, n2 += getBase64Digit(m, 2), k);
-                fillTable3(n3, n3 += getBase64Digit(m, 3), k);
-                fillTable4(n4, n4 += getBase64Digit(m, 4), k);
-                fillTable5(n5, n5 += getBase64Digit(m, 5), k);
-            }
-        }
-
-        /**
-         * Gets the k<sup>th</sup> base 64 digit of {@code m}.
-         *
-         * @param m the value m.
-         * @param k the digit.
-         * @return the base 64 digit
-         */
-        private static int getBase64Digit(int m, int k) {
-            return (m >>> (30 - 6 * k)) & 63;
-        }
-
-        /**
-         * @param n1 Size of table 1.
-         * @param n2 Size of table 2.
-         * @param n3 Size of table 3.
-         * @param n4 Size of table 4.
-         * @param n5 Size of table 5.
-         */
-        protected abstract void createTables(int n1, int n2, int n3, int n4, int n5);
-
-        /**
-         * @param from Lower bound index (inclusive).
-         * @param to Upper bound index (exclusive).
-         * @param value Value.
-         */
-        protected abstract void fillTable1(int from, int to, int value);
-        /**
-         * @param from Lower bound index (inclusive).
-         * @param to Upper bound index (exclusive).
-         * @param value Value.
-         */
-        protected abstract void fillTable2(int from, int to, int value);
-        /**
-         * @param from Lower bound index (inclusive).
-         * @param to Upper bound index (exclusive).
-         * @param value Value.
-         */
-        protected abstract void fillTable3(int from, int to, int value);
-        /**
-         * @param from Lower bound index (inclusive).
-         * @param to Upper bound index (exclusive).
-         * @param value Value.
-         */
-        protected abstract void fillTable4(int from, int to, int value);
-        /**
-         * @param from Lower bound index (inclusive).
-         * @param to Upper bound index (exclusive).
-         * @param value Value.
-         */
-        protected abstract void fillTable5(int from, int to, int value);
-    }
-
-    /**
-     * An implementation for the sample algorithm using based on the decomposition of the
      * index in the range {@code [0,2^30)} into 5 base-64 digits with 8-bit backing storage.
      */
     private static class MarsagliaTsangWangBase64Int8DiscreteSampler
-        extends MarsagliaTsangWangBase64DiscreteSampler {
+        extends MarsagliaTsangWangDiscreteSampler {
         /** The mask to convert a {@code byte} to an unsigned 8-bit integer. */
         private static final int MASK = 0xff;
+
+        /** Limit for look-up table 1. */
+        private final int t1;
+        /** Limit for look-up table 2. */
+        private final int t2;
+        /** Limit for look-up table 3. */
+        private final int t3;
+        /** Limit for look-up table 4. */
+        private final int t4;
 
         /** Look-up table table1. */
         private byte[] table1;
@@ -227,28 +144,47 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
                                                     String distributionName,
                                                     int[] prob,
                                                     int offset) {
-            super(rng, distributionName, prob, offset);
-        }
+            super(rng, distributionName);
 
-        @Override
-        protected void createTables(int n1, int n2, int n3, int n4, int n5) {
+            // Get table sizes for each base-64 digit
+            int n1 = 0;
+            int n2 = 0;
+            int n3 = 0;
+            int n4 = 0;
+            int n5 = 0;
+            for (final int m : prob) {
+                n1 += getBase64Digit(m, 1);
+                n2 += getBase64Digit(m, 2);
+                n3 += getBase64Digit(m, 3);
+                n4 += getBase64Digit(m, 4);
+                n5 += getBase64Digit(m, 5);
+            }
+
             table1 = new byte[n1];
             table2 = new byte[n2];
             table3 = new byte[n3];
             table4 = new byte[n4];
             table5 = new byte[n5];
-        }
 
-        @Override
-        protected void fillTable1(int from, int to, int value) { fill(table1, from, to, value); }
-        @Override
-        protected void fillTable2(int from, int to, int value) { fill(table2, from, to, value); }
-        @Override
-        protected void fillTable3(int from, int to, int value) { fill(table3, from, to, value); }
-        @Override
-        protected void fillTable4(int from, int to, int value) { fill(table4, from, to, value); }
-        @Override
-        protected void fillTable5(int from, int to, int value) { fill(table5, from, to, value); }
+            // Compute offsets
+            t1 = n1 << 24;
+            t2 = t1 + (n2 << 18);
+            t3 = t2 + (n3 << 12);
+            t4 = t3 + (n4 << 6);
+            n1 = n2 = n3 = n4 = n5 = 0;
+
+            // Fill tables
+            for (int i = 0; i < prob.length; i++) {
+                final int m = prob[i];
+                // Primitive type conversion will extract lower 8 bits
+                final byte k = (byte) (i + offset);
+                fill(table1, n1, n1 += getBase64Digit(m, 1), k);
+                fill(table2, n2, n2 += getBase64Digit(m, 2), k);
+                fill(table3, n3, n3 += getBase64Digit(m, 3), k);
+                fill(table4, n4, n4 += getBase64Digit(m, 4), k);
+                fill(table5, n5, n5 += getBase64Digit(m, 5), k);
+            }
+        }
 
         /**
          * Fill the table with the value.
@@ -258,10 +194,9 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
          * @param to Upper bound index (exclusive)
          * @param value Value.
          */
-        private static void fill(byte[] table, int from, int to, int value) {
+        private static void fill(byte[] table, int from, int to, byte value) {
             while (from < to) {
-                // Primitive type conversion will extract lower 8 bits
-                table[from++] = (byte) value;
+                table[from++] = value;
             }
         }
 
@@ -289,13 +224,22 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
     }
 
     /**
-     * An implementation for the sample algorithm using based on the decomposition of the
+     * An implementation for the sample algorithm based on the decomposition of the
      * index in the range {@code [0,2^30)} into 5 base-64 digits with 16-bit backing storage.
      */
     private static class MarsagliaTsangWangBase64Int16DiscreteSampler
-        extends MarsagliaTsangWangBase64DiscreteSampler {
-        /** The mask to convert a {@code short} to an unsigned 16-bit integer. */
+        extends MarsagliaTsangWangDiscreteSampler {
+        /** The mask to convert a {@code byte} to an unsigned 16-bit integer. */
         private static final int MASK = 0xffff;
+
+        /** Limit for look-up table 1. */
+        private final int t1;
+        /** Limit for look-up table 2. */
+        private final int t2;
+        /** Limit for look-up table 3. */
+        private final int t3;
+        /** Limit for look-up table 4. */
+        private final int t4;
 
         /** Look-up table table1. */
         private short[] table1;
@@ -318,28 +262,47 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
                                                      String distributionName,
                                                      int[] prob,
                                                      int offset) {
-            super(rng, distributionName, prob, offset);
-        }
+            super(rng, distributionName);
 
-        @Override
-        protected void createTables(int n1, int n2, int n3, int n4, int n5) {
+            // Get table sizes for each base-64 digit
+            int n1 = 0;
+            int n2 = 0;
+            int n3 = 0;
+            int n4 = 0;
+            int n5 = 0;
+            for (final int m : prob) {
+                n1 += getBase64Digit(m, 1);
+                n2 += getBase64Digit(m, 2);
+                n3 += getBase64Digit(m, 3);
+                n4 += getBase64Digit(m, 4);
+                n5 += getBase64Digit(m, 5);
+            }
+
             table1 = new short[n1];
             table2 = new short[n2];
             table3 = new short[n3];
             table4 = new short[n4];
             table5 = new short[n5];
-        }
 
-        @Override
-        protected void fillTable1(int from, int to, int value) { fill(table1, from, to, value); }
-        @Override
-        protected void fillTable2(int from, int to, int value) { fill(table2, from, to, value); }
-        @Override
-        protected void fillTable3(int from, int to, int value) { fill(table3, from, to, value); }
-        @Override
-        protected void fillTable4(int from, int to, int value) { fill(table4, from, to, value); }
-        @Override
-        protected void fillTable5(int from, int to, int value) { fill(table5, from, to, value); }
+            // Compute offsets
+            t1 = n1 << 24;
+            t2 = t1 + (n2 << 18);
+            t3 = t2 + (n3 << 12);
+            t4 = t3 + (n4 << 6);
+            n1 = n2 = n3 = n4 = n5 = 0;
+
+            // Fill tables
+            for (int i = 0; i < prob.length; i++) {
+                final int m = prob[i];
+                // Primitive type conversion will extract lower 16 bits
+                final short k = (short) (i + offset);
+                fill(table1, n1, n1 += getBase64Digit(m, 1), k);
+                fill(table2, n2, n2 += getBase64Digit(m, 2), k);
+                fill(table3, n3, n3 += getBase64Digit(m, 3), k);
+                fill(table4, n4, n4 += getBase64Digit(m, 4), k);
+                fill(table5, n5, n5 += getBase64Digit(m, 5), k);
+            }
+        }
 
         /**
          * Fill the table with the value.
@@ -349,10 +312,9 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
          * @param to Upper bound index (exclusive)
          * @param value Value.
          */
-        private static void fill(short[] table, int from, int to, int value) {
+        private static void fill(short[] table, int from, int to, short value) {
             while (from < to) {
-                // Primitive type conversion will extract lower 8 bits
-                table[from++] = (short) value;
+                table[from++] = value;
             }
         }
 
@@ -380,11 +342,21 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
     }
 
     /**
-     * An implementation for the sample algorithm using based on the decomposition of the
+     * An implementation for the sample algorithm based on the decomposition of the
      * index in the range {@code [0,2^30)} into 5 base-64 digits with 32-bit backing storage.
      */
     private static class MarsagliaTsangWangBase64Int32DiscreteSampler
-        extends MarsagliaTsangWangBase64DiscreteSampler {
+        extends MarsagliaTsangWangDiscreteSampler {
+
+        /** Limit for look-up table 1. */
+        private final int t1;
+        /** Limit for look-up table 2. */
+        private final int t2;
+        /** Limit for look-up table 3. */
+        private final int t3;
+        /** Limit for look-up table 4. */
+        private final int t4;
+
         /** Look-up table table1. */
         private int[] table1;
         /** Look-up table table2. */
@@ -403,31 +375,49 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
          * @param offset The offset (must be positive).
          */
         MarsagliaTsangWangBase64Int32DiscreteSampler(UniformRandomProvider rng,
-                                                   String distributionName,
-                                                   int[] prob,
-                                                   int offset) {
-            super(rng, distributionName, prob, offset);
-        }
+                                                     String distributionName,
+                                                     int[] prob,
+                                                     int offset) {
+            super(rng, distributionName);
 
-        @Override
-        protected void createTables(int n1, int n2, int n3, int n4, int n5) {
+            // Get table sizes for each base-64 digit
+            int n1 = 0;
+            int n2 = 0;
+            int n3 = 0;
+            int n4 = 0;
+            int n5 = 0;
+            for (final int m : prob) {
+                n1 += getBase64Digit(m, 1);
+                n2 += getBase64Digit(m, 2);
+                n3 += getBase64Digit(m, 3);
+                n4 += getBase64Digit(m, 4);
+                n5 += getBase64Digit(m, 5);
+            }
+
             table1 = new int[n1];
             table2 = new int[n2];
             table3 = new int[n3];
             table4 = new int[n4];
             table5 = new int[n5];
-        }
 
-        @Override
-        protected void fillTable1(int from, int to, int value) { fill(table1, from, to, value); }
-        @Override
-        protected void fillTable2(int from, int to, int value) { fill(table2, from, to, value); }
-        @Override
-        protected void fillTable3(int from, int to, int value) { fill(table3, from, to, value); }
-        @Override
-        protected void fillTable4(int from, int to, int value) { fill(table4, from, to, value); }
-        @Override
-        protected void fillTable5(int from, int to, int value) { fill(table5, from, to, value); }
+            // Compute offsets
+            t1 = n1 << 24;
+            t2 = t1 + (n2 << 18);
+            t3 = t2 + (n3 << 12);
+            t4 = t3 + (n4 << 6);
+            n1 = n2 = n3 = n4 = n5 = 0;
+
+            // Fill tables
+            for (int i = 0; i < prob.length; i++) {
+                final int m = prob[i];
+                final int k = i + offset;
+                fill(table1, n1, n1 += getBase64Digit(m, 1), k);
+                fill(table2, n2, n2 += getBase64Digit(m, 2), k);
+                fill(table3, n3, n3 += getBase64Digit(m, 3), k);
+                fill(table4, n4, n4 += getBase64Digit(m, 4), k);
+                fill(table5, n5, n5 += getBase64Digit(m, 5), k);
+            }
+        }
 
         /**
          * Fill the table with the value.
@@ -439,7 +429,6 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
          */
         private static void fill(int[] table, int from, int to, int value) {
             while (from < to) {
-                // Primitive type conversion will extract lower 8 bits
                 table[from++] = value;
             }
         }
@@ -471,14 +460,15 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
      * Return a fixed result for the Binomial distribution. This is a special class to handle
      * an edge case of probability of success equal to 0 or 1.
      */
-    private static class FixedResultBinomialSampler extends MarsagliaTsangWangDiscreteSampler {
+    private static class MarsagliaTsangWangFixedResultBinomialSampler
+        extends MarsagliaTsangWangDiscreteSampler {
         /** The result. */
         private final int result;
 
         /**
          * @param result Result.
          */
-        FixedResultBinomialSampler(int result) {
+        MarsagliaTsangWangFixedResultBinomialSampler(int result) {
             super(null, BINOMIAL_NAME);
             this.result = result;
         }
@@ -503,17 +493,19 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
      * Binomial(n, p) = 1 - Binomial(n, 1 - p)
      * </pre>
      */
-    private static class InversionBinomialSampler extends MarsagliaTsangWangDiscreteSampler {
+    private static class MarsagliaTsangWangInversionBinomialSampler
+        extends MarsagliaTsangWangDiscreteSampler {
         /** The number of trials. */
         private final int trials;
         /** The Binomial distribution sampler. */
-        private final DiscreteSampler sampler;
+        private final MarsagliaTsangWangDiscreteSampler sampler;
 
         /**
          * @param trials Number of trials.
          * @param sampler Binomial distribution sampler.
          */
-        InversionBinomialSampler(int trials, DiscreteSampler sampler) {
+        MarsagliaTsangWangInversionBinomialSampler(int trials,
+                                                   MarsagliaTsangWangDiscreteSampler sampler) {
             super(null, BINOMIAL_NAME);
             this.trials = trials;
             this.sampler = sampler;
@@ -548,6 +540,17 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
     }
 
     /**
+     * Gets the k<sup>th</sup> base 64 digit of {@code m}.
+     *
+     * @param m the value m.
+     * @param k the digit.
+     * @return the base 64 digit
+     */
+    private static int getBase64Digit(int m, int k) {
+        return (m >>> (30 - 6 * k)) & 63;
+    }
+
+    /**
      * Create a new instance for probabilities {@code p(i)} where the sample value {@code x} is
      * {@code i + offset}.
      *
@@ -577,16 +580,23 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
         return new MarsagliaTsangWangBase64Int32DiscreteSampler(rng, distributionName, prob, offset);
     }
 
+    // =========================================================================
+    // The following factory methods are the public API to construct a sampler for:
+    // - Any discrete probability distribution (from provided double[] probabilities)
+    // - Poisson distribution for mean <= 1024
+    // - Binomial distribution for trials <= 65535
+    // =========================================================================
+
     /**
      * Creates a sampler for a given probability distribution.
      *
      * <p>The probabilities will be normalised using their sum. The only requirement
      * is the sum is positive.</p>
      *
-     * <p>The sum of the probabilities is normalised to 2<sup>30</sup>. Any
-     * probability less than 2<sup>-31</sup> will not be observed in samples. An
-     * adjustment is made to the maximum probability to compensate for round-off
-     * during conversion to look-up tables.</p>
+     * <p>The sum of the probabilities is normalised to 2<sup>30</sup>. Note that
+     * probabilities are adjusted to the nearest 1<sup>-30</sup> due to round-off during
+     * the normalisation conversion. Consequently any probability less than 2<sup>-31</sup>
+     * will not be observed in samples.</p>
      *
      * @param rng Generator of uniformly distributed random numbers.
      * @param probabilities The list of probabilities.
@@ -613,7 +623,7 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
         final double sumProb = validateProbabilities(probabilities);
 
         // Compute the normalisation: 2^30 / sum
-        final double normalisation = (1 << 30) / sumProb;
+        final double normalisation = INT_30 / sumProb;
         final int[] prob = new int[probabilities.length];
         int sum = 0;
         int max = 0;
@@ -632,7 +642,7 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
 
         // The sum must be >= 2^30.
         // Here just compensate the difference onto the highest probability.
-        prob[mode] += (1 << 30) - sum;
+        prob[mode] += INT_30 - sum;
 
         return prob;
     }
@@ -671,9 +681,29 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
     /**
      * Creates a sampler for the Poisson distribution.
      *
-     * <p>Note: Any probability less than 2<sup>-31</sup> will not be observed in samples.
-     * An adjustment is made to the maximum probability to compensate for round-off during
-     * conversion to look-up tables.</p>
+     * <p>Any probability less than 2<sup>-31</sup> will not be observed in samples.</p>
+     *
+     * <p>Storage requirements depend on the tabulated probability values. Example storage
+     * requirements are listed below.</p>
+     *
+     * <pre>
+     * mean      table size     kB
+     * 0.25      882            0.88
+     * 0.5       1135           1.14
+     * 1         1200           1.20
+     * 2         1451           1.45
+     * 4         1955           1.96
+     * 8         2961           2.96
+     * 16        4410           4.41
+     * 32        6115           6.11
+     * 64        8499           8.50
+     * 128       11528          11.53
+     * 256       15935          31.87
+     * 512       20912          41.82
+     * 1024      30614          61.23
+     * </pre>
+     *
+     * <p>Note: Storage changes to 2 bytes per index between {@code mean=128} and {@code mean=256}.</p>
      *
      * @param rng Generator of uniformly distributed random numbers.
      * @param mean Mean.
@@ -738,13 +768,13 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
             for (i = 1; i <= mode; i++) {
                 p *= c / i;
             }
-            final double pX = p;
+            final double pMode = p;
             // Note this will exit when i overflows to negative so no check on the range
             for (i = mode + 1; p * DOUBLE_31 >= 1; i++) {
                 p *= mean / i;
             }
             final int last = i - 2;
-            p = pX;
+            p = pMode;
             int j = -1;
             for (i = mode - 1; i >= 0; i--) {
                 p *= (i + 1) / mean;
@@ -759,7 +789,7 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
             final int size = last - offset + 1;
             prob = new int[size];
 
-            p = pX;
+            p = pMode;
             prob[mode - offset] = toUnsignedInt30(p);
             // The sum must exceed 2^30. In edges cases this is false due to round-off.
             int sum = prob[mode - offset];
@@ -768,14 +798,15 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
                 prob[i - offset] = toUnsignedInt30(p);
                 sum += prob[i - offset];
             }
-            p = pX;
+            p = pMode;
             for (i = mode - 1; i >= offset; i--) {
                 p *= (i + 1) / mean;
                 prob[i - offset] = toUnsignedInt30(p);
                 sum += prob[i - offset];
             }
 
-            // If the sum is < 2^30 add the remaining sum to the mode
+            // If the sum is < 2^30 add the remaining sum to the mode.
+            // If above 2^30 then the effect is truncation of the long tail of the distribution.
             prob[mode - offset] += Math.max(0, INT_30 - sum);
         }
 
@@ -785,9 +816,7 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
     /**
      * Creates a sampler for the Binomial distribution.
      *
-     * <p>Note: Any probability less than 2<sup>-31</sup> will not be observed in samples.
-     * An adjustment is made to the maximum probability to compensate for round-off during
-     * conversion to look-up tables.</p>
+     * <p>Any probability less than 2<sup>-31</sup> will not be observed in samples.</p>
      *
      * @param rng Generator of uniformly distributed random numbers.
      * @param trials Number of trials.
@@ -809,10 +838,10 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
 
         // Handle edge cases
         if (p == 0) {
-            return new FixedResultBinomialSampler(0);
+            return new MarsagliaTsangWangFixedResultBinomialSampler(0);
         }
         if (p == 1) {
-            return new FixedResultBinomialSampler(trials);
+            return new MarsagliaTsangWangFixedResultBinomialSampler(trials);
         }
 
         // A simple check using the supported index size.
@@ -880,13 +909,14 @@ public abstract class MarsagliaTsangWangDiscreteSampler implements DiscreteSampl
         }
 
         // If the sum is < 2^30 add the remaining sum to the mode (floor((n+1)p))).
+        // If above 2^30 then the effect is truncation of the long tail of the distribution.
         final int mode = (int) ((trials + 1) * p) - offset;
         prob[mode] += Math.max(0, INT_30 - sum);
 
         final MarsagliaTsangWangDiscreteSampler sampler = createSampler(rng, BINOMIAL_NAME, prob, offset);
 
         if (inversion) {
-            return new InversionBinomialSampler(trials, sampler);
+            return new MarsagliaTsangWangInversionBinomialSampler(trials, sampler);
         }
         return sampler;
     }
