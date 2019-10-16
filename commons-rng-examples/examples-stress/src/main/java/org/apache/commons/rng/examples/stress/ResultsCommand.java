@@ -79,6 +79,12 @@ class ResultsCommand implements Callable<Void> {
     private static final Pattern TESTU01_TEST_RESULT_PATTERN = Pattern.compile("^  ?(\\d+  .*)    ");
     /** The pattern to identify the Test U01 test starting entry. */
     private static final Pattern TESTU01_STARTING_PATTERN = Pattern.compile("^ *Starting (\\S*)");
+    /** The pattern to identify the PractRand test format. */
+    private static final Pattern PRACTRAND_PATTERN = Pattern.compile("PractRand version");
+    /** The pattern to identify the PractRand output byte size. */
+    private static final Pattern PRACTRAND_OUTPUT_SIZE_PATTERN = Pattern.compile("\\(2\\^(\\d+) bytes\\)");
+    /** The pattern to identify a PractRand failed test result. */
+    private static final Pattern PRACTRAND_FAILED_PATTERN = Pattern.compile("FAIL *!* *$");
     /** The name of the Dieharder sums test. */
     private static final String DIEHARDER_SUMS = "diehard_sums";
     /** The string identifying a bit-reversed generator. */
@@ -165,6 +171,8 @@ class ResultsCommand implements Callable<Void> {
         DIEHARDER,
         /** Test U01. */
         TESTU01,
+        /** PractRand. */
+        PRACTRAND,
     }
 
     /**
@@ -461,8 +469,10 @@ class ResultsCommand implements Callable<Void> {
         final TestResult testResult = new TestResult(resultFile, randomSource, bitReversed, testFormat);
         if (testFormat == TestFormat.DIEHARDER) {
             readDieharder(iter, testResult);
-        } else {
+        } else if (testFormat == TestFormat.TESTU01) {
             readTestU01(resultFile, iter, testResult);
+        } else {
+            readPractRand(iter, testResult);
         }
         return testResult;
     }
@@ -521,6 +531,9 @@ class ResultsCommand implements Callable<Void> {
             }
             if (TESTU01_PATTERN.matcher(line).find()) {
                 return TestFormat.TESTU01;
+            }
+            if (PRACTRAND_PATTERN.matcher(line).find()) {
+                return TestFormat.PRACTRAND;
             }
         }
         if (!ignorePartialResults) {
@@ -708,6 +721,58 @@ class ResultsCommand implements Callable<Void> {
             }
         }
         return null;
+    }
+
+    /**
+     * Read the result output from the PractRand test application.
+     *
+     * @param iter Iterator of the test output.
+     * @param testResult Test result.
+     */
+    private void readPractRand(Iterator<String> iter,
+                               TestResult testResult) {
+        // PractRand results are printed for blocks of byte output that double in size.
+        // The results report 'unusual' and 'suspicious' output and the test stops
+        // at the first failure.
+        // Results are typically reported as the size of output that failed, e.g.
+        // the mersenne twister fails at 256MB.
+        //
+        // rng=RNG_stdin32, seed=0xfc6c7332
+        // length= 128 kilobytes (2^17 bytes), time= 5.9 seconds
+        //   no anomalies in 118 test result(s)
+        //
+        // rng=RNG_stdin32, seed=0xfc6c7332
+        // length= 256 kilobytes (2^18 bytes), time= 7.6 seconds
+        //   Test Name                         Raw       Processed     Evaluation
+        //   [Low1/64]Gap-16:A                 R= +12.4  p =  8.7e-11   VERY SUSPICIOUS
+        //   [Low1/64]Gap-16:B                 R= +13.4  p =  3.0e-11    FAIL
+        //   [Low8/32]DC6-9x1Bytes-1           R=  +7.6  p =  5.7e-4   unusual
+        //   ...and 136 test result(s) without anomalies
+
+        testResult.setTestApplicationName("PractRand");
+
+        // Store the exponent of the output length.
+        int exp = 0;
+
+        // Identify any line containing FAIL and then get the test name using
+        // the first token in the line.
+        while (iter.hasNext()) {
+            String line = iter.next();
+            final Matcher matcher = PRACTRAND_OUTPUT_SIZE_PATTERN.matcher(line);
+            if (matcher.find()) {
+                // Store the current output length
+                exp = Integer.parseInt(matcher.group(1));
+            } else if (PRACTRAND_FAILED_PATTERN.matcher(line).find()) {
+                // Remove initial whitespace
+                line = line.trim();
+                final int index = line.indexOf(' ');
+                // Create the failed test name using the length and the test name.
+                testResult.addFailedTest("2^" + exp + ":" +
+                                         line.substring(0, index));
+            } else if (findExitCode(testResult, line)) {
+                return;
+            }
+        }
     }
 
     /**
