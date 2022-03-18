@@ -322,7 +322,7 @@ public class CachedGenerationPerformance {
      * @param sources Source of randomness.
      * @param bh Data sink.
      */
-    //@Benchmark
+    @Benchmark
     public void nextIntLongProvider(SourcesLong sources,
                                     Blackhole bh) {
         UniformRandomProvider rng = sources.getGenerator();
