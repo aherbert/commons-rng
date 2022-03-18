@@ -202,7 +202,7 @@ public class CachedUniformRandomProviderFactoryTest {
             values[j] = NumberFactory.makeLong(i1, i2);
         }
 
-        for (int j : new int[] {1, 2, 4, 5, 6}) {
+        for (int j : new int[] {1, 2, 4, 5, 6, 8}) {
             // Test a LongProvider that returns the given sequence values
             final UniformRandomProvider source = new LongProvider() {
                 int count = 0;

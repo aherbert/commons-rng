@@ -259,7 +259,7 @@ public class CachedGenerationPerformance {
         // For boolean source test
         "-1", "0", "1", "5",
         // For int source test
-        //"-1", "0", "4", "5", "6", "7",
+        //"-1", "0", "4", "5", "6", "7", "8",
         //"1", "4"
         })
     private int cacheMethod;
