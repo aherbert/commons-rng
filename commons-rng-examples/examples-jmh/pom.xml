@@ -114,9 +114,9 @@
                     <argument>-rff</argument>
                     <argument>target/jmh-result.${benchmark}.json</argument>
                     <argument>-wi</argument>
-                    <argument>10</argument>
+                    <argument>5</argument>
                     <argument>-i</argument>
-                    <argument>100</argument>
+                    <argument>10</argument>
                     <argument>${benchmark}</argument>
                   </arguments>
                 </configuration>

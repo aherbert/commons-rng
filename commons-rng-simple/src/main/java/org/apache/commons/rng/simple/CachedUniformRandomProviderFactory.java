@@ -273,7 +273,85 @@ public final class CachedUniformRandomProviderFactory {
                 booleanSource <<= 1;
             }
             // Return the boolean using the most significant bit.
-            return (booleanSource >>> 31) != 0;
+            return booleanSource < 0;
+        }
+    }
+
+
+    /**
+     * Wrap an IntProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class CachedIntProvider5 extends IntProvider implements CachedUniformRandomProvider {
+
+        /** The underlying source of randomness. */
+        private final RandomIntSource rng;
+
+        /**
+         * Provides a bit source for booleans.
+         *
+         * <p>A cached value from a call to random
+         * {@link UniformRandomProvider#nextInt()}.
+         */
+        private int booleanSource = Integer.MIN_VALUE;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        CachedIntProvider5(RandomIntSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public int next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            int l = booleanSource;
+            if (l == Integer.MIN_VALUE) {
+                // Refill
+                l = rng.next();
+                // Store low 31 bits, return highest bit
+                booleanSource = (l << 1) | 1;
+                return l < 0;
+            }
+            booleanSource = l << 1;
+            return l < 0;
+        }
+    }
+
+    /**
+     * Wrap an IntProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class NoCachedIntProvider extends IntProvider implements CachedUniformRandomProvider {
+
+        /** The underlying source of randomness. */
+        private final RandomIntSource rng;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        NoCachedIntProvider(RandomIntSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public int next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            return rng.next() < 0;
         }
     }
 
@@ -648,7 +726,7 @@ public final class CachedUniformRandomProviderFactory {
                 booleanSource <<= 1;
             }
             // Return the boolean using the most significant bit.
-            return (booleanSource >>> 63) != 0;
+            return booleanSource < 0;
         }
 
         @Override
@@ -667,6 +745,265 @@ public final class CachedUniformRandomProviderFactory {
             intSource = rng.next();
             // Return the upper 32 bits
             return (int) (intSource >>> Integer.SIZE);
+        }
+    }
+
+    /**
+     * Wrap a LongProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class CachedLongProvider5 extends LongProvider implements CachedUniformRandomProvider {
+        /** The underlying source of randomness. */
+        private final RandomLongSource rng;
+
+        /**
+         * Provides a bit source for booleans.
+         * 
+         * <p>The cached value from a call to random UniformRandomProvider#nextLong().
+         * 
+         * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
+         * to eventually equal 1 when all bits are consumed.
+         */
+        private long booleanSource = Long.MIN_VALUE;
+
+        /**
+         * Provides a source for ints.
+         *
+         * <p>A cached half-value from a call to random
+         * {@link UniformRandomProvider#nextLong()}. The int is stored in the lower
+         * 32 bits with zeros in the upper bits. When empty this is set to negative.
+         */
+        private long intSource = -1;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        CachedLongProvider5(RandomLongSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public long next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            long l = booleanSource;
+            if (l == Long.MIN_VALUE) {
+                // Refill
+                l = rng.next();
+                // Store low 63 bits and a refill flag, return highest bit
+                booleanSource = (l << 1) | 1;
+                return l < 0;
+            }
+            // Shift up eventually resetting, return current high bit
+            booleanSource = l << 1;
+            return l < 0;
+        }
+
+        @Override
+        public int nextInt() {
+            long l = intSource;
+            if (l < 0) {
+                // Refill
+                l = rng.next();
+                // Store low 32 bits, return high 32 bits
+                intSource = l & 0xffffffffL;
+                return (int) (l >>> 32);
+            }
+            // Reset and return previous low bits
+            intSource = -1;
+            return (int) l;
+        }
+    }
+
+    /**
+     * Wrap a LongProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class CachedLongProvider6 extends LongProvider implements CachedUniformRandomProvider {
+        /** The underlying source of randomness. */
+        private final RandomLongSource rng;
+
+        /**
+         * Provides a bit source for booleans.
+         * 
+         * <p>The cached value from a call to random UniformRandomProvider#nextLong().
+         * 
+         * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
+         * to eventually equal 1 when all bits are consumed.
+         */
+        private long booleanSource = Long.MIN_VALUE;
+
+        /**
+         * Provides a source for ints.
+         *
+         * <p>A cached half-value from a call to random
+         * {@link UniformRandomProvider#nextLong()}. The int is stored in the lower
+         * 32 bits with zeros in the upper bits. When empty this is set to negative.
+         */
+        private long intSource = -1;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        CachedLongProvider6(RandomLongSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public long next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            // Same as method 5
+            long l = booleanSource;
+            if (l == Long.MIN_VALUE) {
+                // Refill
+                l = rng.next();
+                // Store low 63 bits and a refill flag, return highest bit
+                booleanSource = (l << 1) | 1;
+                return l < 0;
+            }
+            // Shift up eventually resetting, return current high bit
+            booleanSource = l << 1;
+            return l < 0;
+        }
+
+        @Override
+        public int nextInt() {
+            long l = intSource;
+            if (l < 0) {
+                // Refill
+                l = rng.next();
+                // Store low 32 bits, return high 32 bits
+                // intSource = l & 0xffffffffL;
+                // Store low 63 bits, return high 32 bits
+                intSource = (l << 1) >>> 1;
+                return (int) (l >>> 32);
+            }
+            // Reset and return previous low bits
+            intSource = -1;
+            return (int) l;
+        }
+    }
+
+    /**
+     * Wrap a LongProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class CachedLongProvider7 extends LongProvider implements CachedUniformRandomProvider {
+        /** The underlying source of randomness. */
+        private final RandomLongSource rng;
+
+        /**
+         * Provides a bit source for booleans.
+         * 
+         * <p>The cached value from a call to random UniformRandomProvider#nextLong().
+         * 
+         * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
+         * to eventually equal 1 when all bits are consumed.
+         */
+        private long booleanSource = Long.MIN_VALUE;
+
+        /**
+         * Provides a source for ints.
+         *
+         * <p>A cached half-value from a call to random
+         * {@link UniformRandomProvider#nextLong()}. The int is stored in the lower
+         * 32 bits with zeros in the upper bits. When empty this is set to negative.
+         */
+        private long intSource = -1;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        CachedLongProvider7(RandomLongSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public long next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            // Same as method 5
+            long l = booleanSource;
+            if (l == Long.MIN_VALUE) {
+                // Refill
+                l = rng.next();
+                // Store low 63 bits and a refill flag, return highest bit
+                booleanSource = (l << 1) | 1;
+                return l < 0;
+            }
+            // Shift up eventually resetting, return current high bit
+            booleanSource = l << 1;
+            return l < 0;
+        }
+
+        @Override
+        public int nextInt() {
+            long l = intSource;
+            if (l < 0) {
+                // Refill
+                l = rng.next();
+                // FUNCTIONALLY BREAKING CHANGE
+                // Store high 32 bits, return low 32 bits
+                intSource = (l >>> 32);
+                return (int) l;
+            }
+            // Reset and return previous low bits
+            intSource = -1;
+            return (int) l;
+        }
+    }
+
+    /**
+     * Wrap a LongProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class NoCachedLongProvider extends LongProvider implements CachedUniformRandomProvider {
+
+        /** The underlying source of randomness. */
+        private final RandomLongSource rng;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        NoCachedLongProvider(RandomLongSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public long next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            return rng.next() < 0;
+        }
+
+        @Override
+        public int nextInt() {
+            return (int) rng.next();
         }
     }
 
@@ -710,6 +1047,12 @@ public final class CachedUniformRandomProviderFactory {
         }
         if (rng instanceof RandomLongSource) {
             switch (method) {
+            case 7:
+                return new CachedLongProvider7((RandomLongSource) rng);
+            case 6:
+                return new CachedLongProvider6((RandomLongSource) rng);
+            case 5:
+                return new CachedLongProvider5((RandomLongSource) rng);
             case 4:
                 return new CachedLongProvider4((RandomLongSource) rng);
             case 3:
@@ -718,12 +1061,16 @@ public final class CachedUniformRandomProviderFactory {
                 return new CachedLongProvider2((RandomLongSource) rng);
             case 1:
                 return new CachedLongProvider((RandomLongSource) rng);
+            case -1:
+                return new NoCachedLongProvider((RandomLongSource) rng);
             default:
                 throw new IllegalStateException("not implemented");
             }
         }
         if (rng instanceof RandomIntSource) {
             switch (method) {
+            case 5:
+                return new CachedIntProvider5((RandomIntSource) rng);
             case 4:
                 return new CachedIntProvider4((RandomIntSource) rng);
             case 3:
@@ -732,6 +1079,8 @@ public final class CachedUniformRandomProviderFactory {
                 return new CachedIntProvider2((RandomIntSource) rng);
             case 1:
                 return new CachedIntProvider((RandomIntSource) rng);
+            case -1:
+                return new NoCachedIntProvider((RandomIntSource) rng);
             default:
                 throw new IllegalStateException("not implemented");
             }

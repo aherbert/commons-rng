@@ -168,19 +168,19 @@ public class CachedGenerationPerformance {
          * RNG providers.
          */
         @Param({
-                "JDK",
-                "WELL_512_A",
-                "WELL_1024_A",
-                "WELL_19937_A",
-                "WELL_19937_C",
-                "WELL_44497_A",
-                "WELL_44497_B",
-                "MT",
-                "ISAAC",
+//                "JDK",
+//                "WELL_512_A",
+//                "WELL_1024_A",
+//                "WELL_19937_A",
+//                "WELL_19937_C",
+//                "WELL_44497_A",
+//                "WELL_44497_B",
+//                "MT",
+//                "ISAAC",
                 "MWC_256",
-                "KISS", 
-                FLIP_NAME,
-                SWAP_NAME
+                "KISS",
+//                FLIP_NAME,
+//                SWAP_NAME
                 })
         private String randomSourceName;
 
@@ -221,10 +221,10 @@ public class CachedGenerationPerformance {
         @Param({
                 "SPLIT_MIX_64",
                 "XOR_SHIFT_1024_S",
-                "TWO_CMRES",
-                "MT_64",
-                FLIP_NAME,
-                SWAP_NAME
+//                "TWO_CMRES",
+//                "MT_64",
+//                FLIP_NAME,
+//                SWAP_NAME
                 })
         private String randomSourceName;
 
@@ -255,7 +255,13 @@ public class CachedGenerationPerformance {
     /**
      * Flag to indicate the provider should be wrapped with a cache.
      */
-    @Param({"0", "1", "4", "1", "4"})
+    @Param({
+        // For boolean source test
+        "-1", "0", "1", "5",
+        // For int source test
+        //"-1", "0", "4", "5", "6", "7",
+        //"1", "4"
+        })
     private int cacheMethod;
 
     /**

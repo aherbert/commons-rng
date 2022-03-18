@@ -173,17 +173,19 @@ public class CachedUniformRandomProviderFactoryTest {
     private static void testNextBoolean(UniformRandomProvider source,
                                         int trueBitsPerRepeat,
                                         int totalBitsPerRepeat) {
-        final UniformRandomProvider rng = CachedUniformRandomProviderFactory.wrap(source);
-        int count = 0;
-        final int total = 64 * 2; // Factor of 64
-        for (int i = 0; i < total; i++) {
-            if (rng.nextBoolean()) {
-                count++;
+        for (int j : new int[] {1, 2, 4, 5}) {
+            final UniformRandomProvider rng = CachedUniformRandomProviderFactory.wrap(source, j);
+            int count = 0;
+            final int total = 64 * 2; // Factor of 64
+            for (int i = 0; i < total; i++) {
+                if (rng.nextBoolean()) {
+                    count++;
+                }
             }
+            final int repeats = total / totalBitsPerRepeat;
+            final int expected = trueBitsPerRepeat * repeats;
+            Assert.assertEquals("Incorrect number of 'true' bits " + j, expected, count);
         }
-        final int repeats = total / totalBitsPerRepeat;
-        final int expected = trueBitsPerRepeat * repeats;
-        Assert.assertEquals("Incorrect number of 'true' bits", expected, count);
     }
 
     @Test
@@ -200,20 +202,22 @@ public class CachedUniformRandomProviderFactoryTest {
             values[j] = NumberFactory.makeLong(i1, i2);
         }
 
-        // Test a LongProvider that returns the given sequence values
-        final UniformRandomProvider source = new LongProvider() {
-            int count = 0;
-            @Override
-            public long next() {
-                return values[count++];
+        for (int j : new int[] {1, 2, 4, 5, 6}) {
+            // Test a LongProvider that returns the given sequence values
+            final UniformRandomProvider source = new LongProvider() {
+                int count = 0;
+                @Override
+                public long next() {
+                    return values[count++];
+                }
+            };
+    
+            final int[] actual = new int[expected.length];
+            final UniformRandomProvider rng = CachedUniformRandomProviderFactory.wrap(source, j);
+            for (int i = 0; i < expected.length; i ++) {
+                actual[i] = rng.nextInt();
             }
-        };
-
-        final int[] actual = new int[expected.length];
-        final UniformRandomProvider rng = CachedUniformRandomProviderFactory.wrap(source);
-        for (int i = 0; i < expected.length; i ++) {
-            actual[i] = rng.nextInt();
+            Assert.assertArrayEquals("Invalid int sequence " + j, expected, actual);
         }
-        Assert.assertArrayEquals("Invalid int sequence", expected, actual);
     }
 }
