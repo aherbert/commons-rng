@@ -118,7 +118,7 @@ public class CachedUniformRandomProviderFactoryTest {
         final int size = 64;
         // Test all possible number of bits
         for (int bitsPerRepeat = 0; bitsPerRepeat <= size; bitsPerRepeat++) {
-            // Test an IntProvider that returns the given number of bits.
+            // Test an LongProvider that returns the given number of bits.
             final int bits = bitsPerRepeat;
             final UniformRandomProvider rng = new LongProvider() {
                 @Override
@@ -173,7 +173,7 @@ public class CachedUniformRandomProviderFactoryTest {
     private static void testNextBoolean(UniformRandomProvider source,
                                         int trueBitsPerRepeat,
                                         int totalBitsPerRepeat) {
-        for (int j : new int[] {1, 2, 4, 5}) {
+        for (int j : new int[] {1, 2, 4, 5, 6, 7}) {
             final UniformRandomProvider rng = CachedUniformRandomProviderFactory.wrap(source, j);
             int count = 0;
             final int total = 64 * 2; // Factor of 64

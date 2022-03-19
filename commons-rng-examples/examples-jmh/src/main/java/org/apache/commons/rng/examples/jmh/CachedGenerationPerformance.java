@@ -257,7 +257,12 @@ public class CachedGenerationPerformance {
      */
     @Param({
         // For boolean source test
-        "-1", "0", "1", "5",
+        // 0 = current, big endian
+        // 1 = current wrapped, big endian
+        // 5 = big endian, sign test
+        // 6 = little endian, mask test
+        // 7 = little endian, shift and sign test
+        "-1", "0", "1", "5", "6", "7"
         // For int source test
         //"-1", "0", "4", "5", "6", "7", "8",
         //"1", "4"

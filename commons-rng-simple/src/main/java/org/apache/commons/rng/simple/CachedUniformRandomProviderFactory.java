@@ -277,7 +277,6 @@ public final class CachedUniformRandomProviderFactory {
         }
     }
 
-
     /**
      * Wrap an IntProvider instance to enable fast provision of
      * {@link UniformRandomProvider#nextBoolean()}.
@@ -322,6 +321,102 @@ public final class CachedUniformRandomProviderFactory {
             }
             booleanSource = l << 1;
             return l < 0;
+        }
+    }
+
+    /**
+     * Wrap an IntProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class CachedIntProvider6 extends IntProvider implements CachedUniformRandomProvider {
+
+        /** The underlying source of randomness. */
+        private final RandomIntSource rng;
+
+        /**
+         * Provides a bit source for booleans.
+         *
+         * <p>Only stores 31-bits when full. The sign bit is a flag that shifts down
+         * to eventually equal 1 when all bits are consumed.
+         */
+        private int booleanSource = 1;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        CachedIntProvider6(RandomIntSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public int next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            int l = booleanSource;
+            if (l == 1) {
+                // Refill
+                l = rng.next();
+                // Store high 31 bits and a refill flag, return lowest bit
+                booleanSource = (l >>> 1) | Integer.MIN_VALUE;
+                return (l & 0x1) == 1;
+            }
+            // Shift down eventually resetting, return current lowest bit
+            booleanSource = l >>> 1;
+            return (l & 0x1) == 1;
+        }
+    }
+
+    /**
+     * Wrap an IntProvider instance to enable fast provision of
+     * {@link UniformRandomProvider#nextBoolean()}.
+     */
+    static final class CachedIntProvider7 extends IntProvider implements CachedUniformRandomProvider {
+
+        /** The underlying source of randomness. */
+        private final RandomIntSource rng;
+
+        /**
+         * Provides a bit source for booleans.
+         *
+         * <p>Only stores 31-bits when full. The sign bit is a flag that shifts down
+         * to eventually equal 1 when all bits are consumed.
+         */
+        private int booleanSource = 1;
+
+        /**
+         * Create a new instance.
+         *
+         * @param rng the source of randomness
+         */
+        CachedIntProvider7(RandomIntSource rng) {
+            this.rng = rng;
+        }
+
+        @Override
+        public int next() {
+            // Delegate this
+            return rng.next();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            int l = booleanSource;
+            if (l == 1) {
+                // Refill
+                l = rng.next();
+                // Store high 31 bits and a refill flag, return lowest bit
+                booleanSource = (l >>> 1) | Integer.MIN_VALUE;
+                return (l << 31) < 0;
+            }
+            // Shift down eventually resetting, return current lowest bit
+            booleanSource = l >>> 1;
+            return (l << 31) < 0;
         }
     }
 
@@ -761,8 +856,8 @@ public final class CachedUniformRandomProviderFactory {
          * 
          * <p>The cached value from a call to random UniformRandomProvider#nextLong().
          * 
-         * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
-         * to eventually equal 1 when all bits are consumed.
+         * <p>Only stores 63-bits when full. The least significant bit is a flag that shifts up
+         * to eventually equal MIN_VALUE when all bits are consumed.
          */
         private long booleanSource = Long.MIN_VALUE;
 
@@ -837,7 +932,7 @@ public final class CachedUniformRandomProviderFactory {
          * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
          * to eventually equal 1 when all bits are consumed.
          */
-        private long booleanSource = Long.MIN_VALUE;
+        private long booleanSource = 1;
 
         /**
          * Provides a source for ints.
@@ -865,18 +960,17 @@ public final class CachedUniformRandomProviderFactory {
 
         @Override
         public boolean nextBoolean() {
-            // Same as method 5
             long l = booleanSource;
-            if (l == Long.MIN_VALUE) {
+            if (l == 1) {
                 // Refill
                 l = rng.next();
-                // Store low 63 bits and a refill flag, return highest bit
-                booleanSource = (l << 1) | 1;
-                return l < 0;
+                // Store high 63 bits and a refill flag, return lowest bit
+                booleanSource = (l >>> 1) | Long.MIN_VALUE;
+                return (l & 0x1) == 1;
             }
-            // Shift up eventually resetting, return current high bit
-            booleanSource = l << 1;
-            return l < 0;
+            // Shift down eventually resetting, return current lowest bit
+            booleanSource = l >>> 1;
+            return (l & 0x1) == 1;
         }
 
         @Override
@@ -913,7 +1007,7 @@ public final class CachedUniformRandomProviderFactory {
          * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
          * to eventually equal 1 when all bits are consumed.
          */
-        private long booleanSource = Long.MIN_VALUE;
+        private long booleanSource = 1;
 
         /**
          * Provides a source for ints.
@@ -941,18 +1035,17 @@ public final class CachedUniformRandomProviderFactory {
 
         @Override
         public boolean nextBoolean() {
-            // Same as method 5
             long l = booleanSource;
-            if (l == Long.MIN_VALUE) {
+            if (l == 1) {
                 // Refill
                 l = rng.next();
-                // Store low 63 bits and a refill flag, return highest bit
-                booleanSource = (l << 1) | 1;
-                return l < 0;
+                // Store high 63 bits and a refill flag, return lowest bit
+                booleanSource = (l >>> 1) | Long.MIN_VALUE;
+                return (l << 63) < 0;
             }
-            // Shift up eventually resetting, return current high bit
-            booleanSource = l << 1;
-            return l < 0;
+            // Shift down eventually resetting, return current lowest bit
+            booleanSource = l >>> 1;
+            return (l << 63) < 0;
         }
 
         @Override
@@ -985,8 +1078,8 @@ public final class CachedUniformRandomProviderFactory {
          * 
          * <p>The cached value from a call to random UniformRandomProvider#nextLong().
          * 
-         * <p>Only stores 63-bits when full. The sign bit is a flag that shifts down
-         * to eventually equal 1 when all bits are consumed.
+         * <p>Only stores 63-bits when full. The least significant bit is a flag that shifts up
+         * to eventually equal MIN_VALUE when all bits are consumed.
          */
         private long booleanSource = Long.MIN_VALUE;
 
@@ -1147,6 +1240,10 @@ public final class CachedUniformRandomProviderFactory {
         }
         if (rng instanceof RandomIntSource) {
             switch (method) {
+            case 7:
+                return new CachedIntProvider7((RandomIntSource) rng);
+            case 6:
+                return new CachedIntProvider6((RandomIntSource) rng);
             case 5:
                 return new CachedIntProvider5((RandomIntSource) rng);
             case 4:
